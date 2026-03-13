@@ -1,0 +1,17 @@
+# API keys — never commit
+.env
+
+# Vector databases — can be large
+repomind_db_*/
+
+# Cloned repos — temporary
+cloned_repo/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
