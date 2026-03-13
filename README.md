@@ -45,8 +45,7 @@ GitHub URL or Local Path
 
 ```bash
 # 1. Clone this repo
-git clone https://github.com/yourusername/codeqa
-cd codeqa
+git clone https://github.com/Krishnap1116/RepoMind.git
 
 # 2. Create virtual environment
 python -m venv venv
@@ -67,21 +66,21 @@ cp .env.example .env
 
 ### Query a GitHub repo
 ```bash
-python codeqa.py \
+python repomind.py \
   --repo https://github.com/pallets/flask \
   --query "How does error handling work?"
 ```
 
 ### Query a local codebase
 ```bash
-python codeqa.py \
+python repomind.py \
   --repo ./my_project \
   --query "How is the database connection managed?"
 ```
 
 ### Second query on same repo (instant — no re-embedding)
 ```bash
-python codeqa.py \
+python repomind.py \
   --repo https://github.com/pallets/flask \
   --query "How does Flask handle middleware?"
 ```
@@ -114,19 +113,6 @@ Every answer is automatically scored by a judge LLM on 3 dimensions:
 | **Answer Relevance** | Does the answer actually address what was asked? |
 
 Scores range from 0.0 to 1.0. Higher is better.
-
----
-
-## Project structure
-
-```
-REPOMIND/
-├── repomind.py          # Main script — full RAG pipeline
-├── requirements.txt   # Python dependencies
-├── .env.example       # API key template
-├── .gitignore         # Ignores .env, vector DBs, cloned repos
-└── README.md          # This file
-```
 
 ---
 
