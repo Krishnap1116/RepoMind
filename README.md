@@ -1,6 +1,6 @@
 # RepoMind — Understand any codebase with AI
 
-Ask natural-language questions about any codebase (local or GitHub) and get answers with file and line citations. RepoMind ships with an evaluation harness: a hand-verified golden set, deterministic retrieval metrics, RAGAS answer scoring and paired bootstrap intervals, which were used to test every retrieval change below before it was kept.
+Ask natural-language questions about any codebase (local or GitHub) and get answers with file and line citations. RepoMind ships with an evaluation harness: a hand-verified golden set, deterministic retrieval metrics, RAGAS answer scoring and paired bootstrap intervals.
 
 ## Results
 
@@ -21,10 +21,10 @@ What the evidence supports:
 2. **Small-to-big gets the needed facts to the LLM far more often.** Search runs over small fragments, then the LLM reads the whole function each fragment belongs to. Context recall rose by +0.21 on the development set and by +0.18 [+0.04, +0.33] on held-out questions. It roughly doubles the context sent to the LLM (~650 → ~1,500 tokens per question).
 3. **Better context did not clearly give better answers.** With `gpt-4.1-mini`, answers covered more of the reference facts (+0.06 [+0.01, +0.11]), but that gain did not replicate on the held-out set (+0.03 [−0.06, +0.13]). Factual correctness (F1) showed no difference, and with `gpt-4o-mini` neither did completeness.
 4. **The generator model mattered more than any retrieval change after headers.** Switching from `gpt-4o-mini` to `gpt-4.1-mini` raised completeness by +0.08 [+0.04, +0.13] with headers and +0.11 [+0.07, +0.16] with small_to_big.
-5. **Three popular techniques did not beat headers on these questions:** syntax-aware chunking as the *search* unit (Hit@1 −0.13 [−0.21, −0.04]), a general-purpose cross-encoder reranker (MRR −0.08 [−0.15, −0.01]), and hybrid BM25 search (no measurable difference). On the held-out locate and multi-file questions, hybrid trended better (MRR +0.10 [−0.04, +0.25]), a lead that is not yet confirmed.
+5. **Three techniques did not beat headers on these questions:** syntax-aware chunking as the *search* unit (Hit@1 −0.13 [−0.21, −0.04]), a general-purpose cross-encoder reranker (MRR −0.08 [−0.15, −0.01]), and hybrid BM25 search (no measurable difference). On the held-out locate and multi-file questions, hybrid trended better (MRR +0.10 [−0.04, +0.25]), a lead that is not yet confirmed.
 6. **The system says "not in the code"** on 7 of 7 unanswerable questions with `gpt-4.1-mini`, and on 6 of 7 with `gpt-4o-mini`.
 
-The full evaluation, including every condition, two generators and the held-out set, cost under $2 in OpenAI API calls. Embeddings and the reranker run locally. Method, per-repo tables and limits: [Evaluation](#evaluation).
+Method, per-repo tables and limits: [Evaluation](#evaluation).
 
 ---
 
@@ -126,7 +126,7 @@ For front-end files, React components (`function App()`, `const Cart = () => …
 ## Evaluation
 
 ### Question sets
-Every reference answer and gold file was checked against the pinned source when written, and 10 development-set rows were independently re-checked by hand.
+Every reference answer and gold file was checked against the pinned source when written.
 - **Development set** (used for every design decision): [eval/golden_flask.jsonl](eval/golden_flask.jsonl) has Flask `3.1.0`, 40 answerable + 4 unanswerable questions. [eval/golden_requests.jsonl](eval/golden_requests.jsonl) has requests `v2.32.3`, 30 answerable + 3 unanswerable questions. 60 of the 70 answerable questions are "how does X work" explanations.
 - **Held-out set** (written after the design was fixed, used once): [eval/heldout_flask.jsonl](eval/heldout_flask.jsonl) and [eval/heldout_requests.jsonl](eval/heldout_requests.jsonl), with 10 questions each, 5 multi-file and 5 locate per repo. These add the question types the development set lacked.
 
@@ -154,7 +154,7 @@ Paired differences (95% intervals):
   - factual correctness: −0.01 [−0.05, +0.04] (4o-mini), +0.02 [−0.03, +0.07] (4.1-mini)
 - **gpt-4o-mini → gpt-4.1-mini**, completeness: +0.08 [+0.04, +0.13] with headers, +0.11 [+0.07, +0.16] with small_to_big.
 
-The small-to-big completeness gain is significant with `gpt-4.1-mini` and not with `gpt-4o-mini`, but the difference between those two effects is not itself significant. So this does **not** show that small-to-big needs a stronger model.
+The small-to-big completeness gain is significant with `gpt-4.1-mini` and not with `gpt-4o-mini`, but the two intervals overlap, so this does **not** show that small-to-big needs a stronger model.
 
 ### Held-out set (20 questions, gpt-4.1-mini)
 
