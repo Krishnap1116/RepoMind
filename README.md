@@ -107,7 +107,7 @@ Pick one with `--config`. The default is `small_to_big`. Every config differs fr
 
 All chunk counts, sizes and split rates above are for `src/flask/*.py` and come from `python eval/chunk_stats.py` (no API calls).
 
-**Why both?** Small fragments are better *search* units, while whole functions are better *reading* units. Using whole functions as the search unit (`ast`) retrieved worse, most likely because code became fewer, larger vectors that focused docs passages out-ranked (9 of its 10 losses had a docs chunk at #1). `small_to_big` uses each chunking for the job it measured best at.
+**Why both?** Small fragments are better *search* units, while whole functions are better *reading* units. Using whole functions as the search unit (`ast`) retrieved worse, most likely because code became fewer, larger vectors that each covered more ideas, so more focused docs passages out-ranked them (9 of its 10 losses had a docs chunk at #1). `small_to_big` uses each chunking for the job it measured best at.
 
 | Category | Extensions | Syntax-aware |
 |----------|-----------|:---:|
@@ -229,6 +229,7 @@ python eval/run_eval.py --configs baseline,headers,small_to_big
 python eval/rescore_factual.py --mode recall --configs headers,small_to_big
 # Header vs. chunk count (run once per repo, as above)
 GEN_MODEL=gpt-4o-mini python eval/run_eval.py --configs baseline,dense_k5,headers
+GEN_MODEL=gpt-4o-mini python eval/rescore_factual.py --mode recall --configs baseline,dense_k5,headers
 
 # Pooled paired intervals across repos; ":label" tags runs, e.g. by generator
 python eval/pool_results.py eval/results/golden_flask__20261022-194532 eval/results/golden_requests__20261022-195753 \
