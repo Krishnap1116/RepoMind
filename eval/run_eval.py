@@ -308,8 +308,11 @@ def main():
     run_tag = os.path.splitext(os.path.basename(args.golden))[0]
     if exclude:
         run_tag += "__excl-" + re.sub(r"[^\w.-]", "_", "+".join(exclude))
-    judge = None if args.retrieval_only or args.no_ragas else make_chat_model(JUDGE_MODEL)
-    print(f"{len(golden)} questions | generator={GEN_MODEL} | judge={JUDGE_MODEL}")
+    # None when unused, so the log and summary.json name the same models
+    generator = None if args.retrieval_only else GEN_MODEL
+    judge_model = None if args.retrieval_only or args.no_ragas else JUDGE_MODEL
+    judge = make_chat_model(judge_model) if judge_model else None
+    print(f"{len(golden)} questions | generator={generator} | judge={judge_model}")
 
     all_records = []
     for name in names:
@@ -344,8 +347,7 @@ def main():
     df.drop(columns=["contexts"], errors="ignore").to_csv(os.path.join(out_dir, "per_question.csv"), index=False)
     meta = {"repo": args.repo, "ref": args.ref, "questions": len(golden), "exclude": list(exclude),
             "embeddings": EMBED_MODEL, "reranker": RERANK_MODEL,
-            "generator": None if args.retrieval_only else GEN_MODEL,
-            "judge": None if args.retrieval_only or args.no_ragas else JUDGE_MODEL}
+            "generator": generator, "judge": judge_model}
     with open(os.path.join(out_dir, "summary.json"), "w") as f:
         json.dump({"meta": meta, "results": summary.to_dict(orient="records")}, f, indent=2)
     table = to_markdown(summary.drop(columns=KIND_COLUMNS))

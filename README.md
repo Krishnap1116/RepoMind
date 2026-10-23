@@ -17,7 +17,7 @@ Ask natural-language questions about any codebase (local or GitHub) and get answ
 ¹ Baseline was scored with `gpt-4o-mini` generating answers. Against headers with the same generator it is −0.17 [−0.24, −0.11] on factual correctness and −0.19 [−0.29, −0.08] on context recall.
 
 What the evidence supports:
-1. **Contextual chunk headers are the main retrieval win, and about half of the answer gain.** Prefixing every chunk with its file, lines and enclosing function improved retrieval (Hit@1 +0.13 [+0.01, +0.24]), and this held on the held-out questions (MRR +0.18 [+0.01, +0.35]). Answers improved by +0.17 [+0.11, +0.24] factual correctness over the baseline, but the baseline also gave the LLM 3 chunks instead of 5. With 5 chunks on both sides (`dense_k5` → `headers`, `gpt-4o-mini`), the header alone added +0.09 [+0.03, +0.14] factual correctness and +0.12 [+0.03, +0.22] context recall, with about the same amount of context (~630 vs ~650 tokens). The other +0.08 [+0.03, +0.14] came from the two extra chunks.
+1. **Contextual chunk headers are the main retrieval win, and about half of the answer gain.** Prefixing every chunk with its file, lines and enclosing function improved retrieval (Hit@1 +0.13 [+0.01, +0.24]), and this held on the held-out questions (MRR +0.18 [+0.01, +0.35]). Answers improved by +0.17 [+0.11, +0.24] factual correctness over the baseline, but the baseline also gave the LLM 3 chunks instead of 5. With 5 chunks on both sides (`dense_k5` → `headers`, `gpt-4o-mini`), the header alone added +0.09 [+0.03, +0.14] factual correctness and +0.12 [+0.03, +0.22] context recall, with about the same amount of context (~630 vs ~650 tokens). The other +0.08 [+0.03, +0.14] came from the two extra chunks. The two parts were measured in this order only (headers with 3 chunks was not run), so they are steps along one path, not independent effects.
 2. **Small-to-big gets the needed facts to the LLM far more often.** Search runs over small fragments, then the LLM reads the whole function each fragment belongs to. Context recall rose by +0.21 on the development set and by +0.18 [+0.04, +0.33] on held-out questions. It roughly doubles the context sent to the LLM (~650 → ~1,500 tokens per question).
 3. **Better context did not clearly give better answers.** With `gpt-4.1-mini`, answers covered more of the reference facts (+0.06 [+0.01, +0.11]), but that gain did not replicate on the held-out set (+0.03 [−0.06, +0.13]). Factual correctness (F1) showed no difference, and with `gpt-4o-mini` neither did completeness.
 4. **The generator model mattered more than any retrieval change after headers.** Switching from `gpt-4o-mini` to `gpt-4.1-mini` raised completeness by +0.08 [+0.04, +0.13] with headers and +0.11 [+0.07, +0.16] with small_to_big.
@@ -150,7 +150,7 @@ Every reference answer and gold file was checked against the pinned source when 
 | gpt-4.1-mini | small_to_big | 0.57 | 0.62 | 0.93 | 0.84 | 0.79 | 0.78 |
 
 Paired differences (95% intervals):
-- **baseline → headers** (gpt-4o-mini): factual correctness +0.17 [+0.11, +0.24], completeness +0.15 [+0.10, +0.21], context recall +0.19 [+0.08, +0.29], faithfulness +0.05 [0.00, +0.09], answer relevancy +0.08 [+0.02, +0.15]. This step changes two things, so it is split in the next two lines.
+- **baseline → headers** (gpt-4o-mini): factual correctness +0.17 [+0.11, +0.24], completeness +0.15 [+0.10, +0.21], context recall +0.19 [+0.08, +0.29], faithfulness +0.05 [0.00, +0.09], answer relevancy +0.08 [+0.02, +0.15]. This step changes two things, so it is split in the next two lines, in this order only (headers with 3 chunks was not run).
   - **baseline → dense_k5** (5 chunks instead of 3, no header): factual correctness +0.08 [+0.03, +0.14], completeness +0.06 [+0.02, +0.10], context recall +0.06 [−0.03, +0.16], faithfulness −0.01 [−0.06, +0.03].
   - **dense_k5 → headers** (header only, same 5 chunks): factual correctness +0.09 [+0.03, +0.14], completeness +0.10 [+0.05, +0.15], context recall +0.12 [+0.03, +0.22], faithfulness +0.06 [+0.01, +0.11], answer relevancy +0.04 [−0.01, +0.11].
 - **headers → small_to_big**:
@@ -203,7 +203,7 @@ Per-technique diagnosis:
 - The judge (`gpt-4o-mini`) is weaker than the strongest generator tested (`gpt-4.1-mini`), and an LLM judge is noisy on single answers. Claims rest on paired differences over 70 (or 20) questions.
 - Factual correctness compares against short reference answers, so true extra detail in an answer lowers its F1. Completeness (recall) is reported alongside for that reason.
 - The development set is skewed to explanation questions. The held-out set covers locate and multi-file questions but is small (n = 20).
-- Small-to-big sends about 2.3× more context tokens. Its effect on latency is within API noise: median time per question changed by −0.2 to +0.4 s across the six runs.
+- Small-to-big sends about 2.3× more context tokens. Its effect on latency is within API noise: the median time per question in each run moved by −0.2 to +0.4 s across the six runs.
 
 ### Raw results
 Each evaluation run folder in `eval/results/` holds `per_question.csv`, `summary.json` and `ablation.md`; the completeness re-score folders (`factual_recall__…`) hold `per_question.csv` and `intervals.md`.
