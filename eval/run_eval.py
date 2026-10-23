@@ -308,7 +308,7 @@ def main():
     run_tag = os.path.splitext(os.path.basename(args.golden))[0]
     if exclude:
         run_tag += "__excl-" + re.sub(r"[^\w.-]", "_", "+".join(exclude))
-    judge = make_chat_model(JUDGE_MODEL)
+    judge = None if args.retrieval_only or args.no_ragas else make_chat_model(JUDGE_MODEL)
     print(f"{len(golden)} questions | generator={GEN_MODEL} | judge={JUDGE_MODEL}")
 
     all_records = []

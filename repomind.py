@@ -8,7 +8,7 @@ import hashlib
 from collections import Counter
 from dataclasses import dataclass
 from fnmatch import fnmatch
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
@@ -19,9 +19,6 @@ from tree_sitter_language_pack import get_parser
 from dotenv import load_dotenv
 
 load_dotenv()
-
-if not os.environ.get("OPENAI_API_KEY"):
-    raise ValueError("OPENAI_API_KEY not found. Check your .env file.")
 
 # OpenAI model names by default; for OpenRouter set OPENAI_API_BASE and use ids like "openai/gpt-4.1-mini".
 # These are the models the README results were measured with.
@@ -97,7 +94,7 @@ class RetrievalConfig:
     k_final: int = 5              # chunks given to the LLM
 
 
-# Ablation: each config differs from "headers" by one component
+# Ablation: each config differs from "headers" by one component, except baseline, which differs from dense_k5 by one
 CONFIGS = {
     "baseline"     : RetrievalConfig("baseline", k_final=3),
     "dense_k5"     : RetrievalConfig("dense_k5"),
@@ -112,7 +109,14 @@ CONFIGS = {
 }
 
 
+def require_api_key():
+    # checked only where an API is called, so indexing, retrieval-only evals and chunk stats run without a key
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise ValueError("OPENAI_API_KEY not found. Check your .env file.")
+
+
 def make_chat_model(model, temperature=0):
+    require_api_key()
     # retry rate-limited or failed calls with backoff instead of failing a long eval run
     return ChatOpenAI(model=model, temperature=temperature, max_retries=6,
                       base_url=os.environ.get("OPENAI_API_BASE"))
@@ -140,6 +144,7 @@ class LocalEmbeddings(Embeddings):
 def make_embeddings():
     if EMBED_MODEL.startswith("local:"):
         return LocalEmbeddings(EMBED_MODEL.removeprefix("local:"))
+    require_api_key()
     # send raw strings: non-OpenAI embedding models can't take tiktoken ids
     return OpenAIEmbeddings(model=EMBED_MODEL, base_url=os.environ.get("OPENAI_API_BASE"),
                             check_embedding_ctx_length=False)
@@ -566,7 +571,6 @@ class RAGPipeline:
                            if any(fnmatch(doc.metadata["source"], pattern) for pattern in exclude)})
         self.dense_filter = {"source": {"$nin": excluded}} if excluded else None
         self.docs = [doc for doc in self.docs if doc.metadata["source"] not in set(excluded)]
-        self.llm = make_chat_model(GEN_MODEL)
         self.bm25 = None
         if config.retriever == "hybrid":
             self.bm25 = BM25Okapi([tokenize(doc.page_content) for doc in self.docs])
@@ -575,6 +579,11 @@ class RAGPipeline:
             from sentence_transformers import CrossEncoder
             self.reranker = CrossEncoder(RERANK_MODEL)
         self.parents = build_or_load_parents(repo, ref) if config.context == "parent" else {}
+
+    @cached_property
+    def llm(self):
+        # created on first answer, so retrieval-only runs need no API key
+        return make_chat_model(GEN_MODEL)
 
     def retrieve(self, query, k=None):
         """Top k ranked chunks, best first (k defaults to config.k_final). contexts() turns them into what the LLM reads."""
