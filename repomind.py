@@ -4,6 +4,7 @@ import json
 import argparse
 import subprocess
 import shutil
+import hashlib
 from collections import Counter
 from dataclasses import dataclass
 from fnmatch import fnmatch
@@ -56,7 +57,10 @@ TEXT_EXTENSIONS = {
     ".xml", ".cfg", ".ini"
 }
 
-IGNORE_DIRS = {"__pycache__", ".git", "node_modules", "venv", ".venv", ".env"}
+IGNORE_DIRS = {"__pycache__", ".git", "node_modules", "venv", ".venv", ".env",
+               # build output and tool caches: generated copies of the source, not the source
+               ".next", ".nuxt", ".svelte-kit", "dist", ".tox", ".mypy_cache", ".pytest_cache", ".ruff_cache",
+               "site-packages"}
 
 # Syntax-aware ("ast") chunking: code and front-end files are parsed with tree-sitter
 TREE_SITTER_LANGUAGES = {
@@ -368,8 +372,14 @@ def split_with_splitter(text, extension):
     return chunks
 
 
+def is_minified(text):
+    """Minified/bundled files put many statements on one line; line-based syntax chunks would copy that
+    whole line into every chunk, so these files use the character splitter instead."""
+    return max(map(len, text.splitlines()), default=0) > 1000
+
+
 def split_file(text, extension, chunking):
-    if chunking == "ast" and extension in TREE_SITTER_LANGUAGES:
+    if chunking == "ast" and extension in TREE_SITTER_LANGUAGES and not is_minified(text):
         return split_code(text, TREE_SITTER_LANGUAGES[extension])
     return split_with_splitter(text, extension)
 
@@ -430,12 +440,35 @@ def load_codebase(repo_path, chunk_headers=False, chunking="splitter"):
     return documents
 
 
+def cache_dir(kind, repo, ref, suffix=""):
+    """Cache folder for one version of a repo. A GitHub repo is named by its ref. A local folder is named by
+    its full path, and its cache is cleared when any file in it changed since the cache was built."""
+    if is_github_url(repo):
+        tag = re.sub(r"[^\w.-]", "_", ref) if ref else "head"
+        return os.path.join(BASE_DIR, f"{kind}_{get_repo_name(repo)}_{tag}{suffix}")
+    path = os.path.abspath(repo)
+    folder = os.path.join(BASE_DIR, f"{kind}_{get_repo_name(repo)}_{hashlib.sha1(path.encode()).hexdigest()[:8]}{suffix}")
+    # a folder's mtime changes when a file in it is added, removed or renamed; a file's when it is edited
+    newest = 0.0
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
+        newest = max([newest, os.path.getmtime(root)] + [os.path.getmtime(os.path.join(root, f)) for f in files])
+    stamp_path = os.path.join(folder, "source_mtime")
+    stamp = os.path.exists(stamp_path) and open(stamp_path).read()
+    if os.path.exists(folder) and stamp != str(newest):
+        print(f"{path} changed since it was indexed. Rebuilding.")
+        shutil.rmtree(folder)
+    os.makedirs(folder, exist_ok=True)
+    with open(stamp_path, "w") as f:
+        f.write(str(newest))
+    return folder
+
+
 def build_or_load_index(repo, ref=None, chunk_headers=False, chunking="splitter"):
     """Return (vectorstore, chunks). Each (repo, ref, chunking, header mode, embedding model) gets its own cache folder."""
-    tag = re.sub(r"[^\w.-]", "_", ref) if ref else "head"
     mode = ("headers" if chunk_headers else "plain") + ("_ast" if chunking == "ast" else "")
     embed = re.sub(r"[^\w.-]", "_", EMBED_MODEL.split("/")[-1])
-    persist_dir = os.path.join(BASE_DIR, f"repomind_db_{get_repo_name(repo)}_{tag}_{mode}_{embed}")
+    persist_dir = cache_dir("repomind_db", repo, ref, f"_{mode}_{embed}")
     chunks_path = os.path.join(persist_dir, "chunks.jsonl")
     embeddings = make_embeddings()
 
@@ -461,10 +494,12 @@ def build_or_load_index(repo, ref=None, chunk_headers=False, chunking="splitter"
         ids=[doc.metadata["chunk_id"] for doc in docs],
         persist_directory= persist_dir
     )
-    # BM25 needs the raw chunks at query time, so keep them next to the vector DB
-    with open(chunks_path, "w") as f:
+    # BM25 needs the raw chunks at query time, so keep them next to the vector DB.
+    # Written last and renamed into place: its existence means the whole index is complete.
+    with open(chunks_path + ".tmp", "w") as f:
         for doc in docs:
             f.write(json.dumps({"page_content": doc.page_content, "metadata": doc.metadata}) + "\n")
+    os.replace(chunks_path + ".tmp", chunks_path)
     print("Stored")
     return vector_data, docs
 
@@ -475,19 +510,19 @@ def build_or_load_parents(repo, ref=None):
     Same tree-sitter units as syntax-aware chunking, with a larger PARENT_MAX_TOKENS budget. Nothing is
     embedded, so this only needs a clone. Returns {source: [(start_line, end_line, symbol, text), ...]}.
     """
-    tag = re.sub(r"[^\w.-]", "_", ref) if ref else "head"
-    path = os.path.join(BASE_DIR, f"repomind_parents_{get_repo_name(repo)}_{tag}", "parents.jsonl")
+    path = os.path.join(cache_dir("repomind_parents", repo, ref), "parents.jsonl")
     if not os.path.exists(path):
         cloned = is_github_url(repo)
         repo_path = clone_repo(repo, ref=ref) if cloned else repo
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
+        # renamed into place when complete, so an interrupted build is redone instead of reused
+        with open(path + ".tmp", "w") as f:
             for source, extension, text in iter_repo_files(repo_path):
-                if extension not in TREE_SITTER_LANGUAGES:
+                if extension not in TREE_SITTER_LANGUAGES or is_minified(text):
                     continue
                 for chunk, start, end, symbol in split_code(text, TREE_SITTER_LANGUAGES[extension], PARENT_MAX_TOKENS):
                     f.write(json.dumps({"source": source, "start": start, "end": end,
                                         "symbol": symbol, "text": chunk}) + "\n")
+        os.replace(path + ".tmp", path)
         if cloned:
             cleanup_repo(repo_path)
     parents = {}

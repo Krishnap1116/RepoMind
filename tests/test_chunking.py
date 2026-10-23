@@ -69,6 +69,27 @@ def test_splitter_mode_and_unsupported_files_fall_back_to_character_chunks():
     assert split_file("# Title\n\nSome docs.", ".md", "ast")[0][0].startswith("# Title")
 
 
+def test_splitter_chunks_get_correct_lines_and_enclosing_symbol():
+    def body(indent):
+        return "\n".join(f"{indent}x{i} = compute_something_long({i})" for i in range(30))
+    text = f"class Store:\n    def add(self, item):\n{body(' ' * 8)}\n\n\ndef top_level():\n{body(' ' * 4)}\n"
+    lines = text.splitlines()
+    chunks = split_file(text, ".py", "splitter")
+    for chunk, start, end, _ in chunks:
+        assert lines[start - 1].strip() == chunk.splitlines()[0].strip()
+        assert lines[end - 1].strip() == chunk.splitlines()[-1].strip()
+    symbols = [symbol for *_, symbol in chunks]
+    assert symbols[0] == "Store" and symbols[-1] == "top_level"
+    assert symbols == sorted(symbols, key=["Store", "Store.add", "top_level"].index)
+    assert "Store.add" in symbols
+
+
+def test_minified_file_is_not_copied_into_every_chunk():
+    minified = ";".join(f"var a{i}=function(){{return {i}}}" for i in range(200))
+    chunks = split_file(minified, ".js", "ast")
+    assert sum(len(chunk) for chunk, *_ in chunks) < 2 * len(minified)
+
+
 def test_chunk_kind_labels():
     assert chunk_kind("src/flask/app.py") == "code"
     assert chunk_kind("tests/test_basic.py") == "tests"
