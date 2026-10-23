@@ -94,7 +94,7 @@ Pick one with `--config`. The default is `small_to_big`. Every config differs fr
 | `baseline` | Dense search over 512-character chunks, top 3 chunks to the LLM (the original RepoMind) |
 | `dense_k5` | `baseline` with top 5 chunks to the LLM, i.e. `headers` without the header. Same ranking as `baseline`, so its retrieval scores are identical; it differs only in answers |
 | `headers` | Contextual header (file, lines, enclosing class/function) prepended to each chunk before embedding |
-| `small_to_big` | `headers` search; the LLM reads the whole function/class (up to 1,500 tokens) each fragment belongs to |
+| `small_to_big` | `headers` search; the LLM reads the whole function/class (up to 1,500 tokens) each fragment belongs to. Same ranking as `headers`, so its retrieval scores are identical; it differs only in what the LLM reads |
 | `ast` | `headers` with syntax-aware chunks as the search unit |
 | `headers_rerank` | `headers` + `BAAI/bge-reranker-base` cross-encoder reranking the top 20 |
 | `hybrid` | `headers` + BM25 keyword search fused with dense search (Reciprocal Rank Fusion) |
