@@ -1,17 +1,24 @@
-# API keys — never commit
+# API keys — never commit (any .env variant except the template)
 .env
+.env.*
+!.env.example
 
-# Vector databases — can be large
+# Vector databases and small-to-big parent store — large, rebuilt locally
 repomind_db_*/
+repomind_parents_*/
 
 # Cloned repos — temporary
 cloned_repo/
+
+# Eval answer/judge cache (results that back the README live in eval/results/ and are committed)
+eval/.cache/
 
 # Python
 __pycache__/
 *.pyc
 .venv/
 venv/
+.pytest_cache/
 
 # OS
 .DS_Store

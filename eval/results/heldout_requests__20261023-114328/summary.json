@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "repo": "https://github.com/psf/requests",
+    "ref": "v2.32.3",
+    "questions": 10,
+    "exclude": [],
+    "embeddings": "local:BAAI/bge-base-en-v1.5",
+    "reranker": "BAAI/bge-reranker-base",
+    "generator": "gpt-4.1-mini",
+    "judge": "gpt-4o-mini"
+  },
+  "results": [
+    {
+      "config": "headers",
+      "hit@1": 0.5,
+      "hit@5": 0.9,
+      "mrr@10": 0.634,
+      "recall@5": 0.683,
+      "noncode@1": 0.5,
+      "noncode_share@5": 0.6,
+      "code_hit@1": 0.9,
+      "code_mrr@10": 0.933,
+      "faithfulness": 0.84,
+      "answer_relevancy": 0.814,
+      "context_precision": 0.823,
+      "context_recall": 0.625,
+      "factual_correctness": 0.546,
+      "context_tokens": 646,
+      "p50_latency_s": 1.5
+    },
+    {
+      "config": "small_to_big",
+      "hit@1": 0.5,
+      "hit@5": 0.9,
+      "mrr@10": 0.634,
+      "recall@5": 0.683,
+      "noncode@1": 0.5,
+      "noncode_share@5": 0.6,
+      "code_hit@1": 0.9,
+      "code_mrr@10": 0.933,
+      "faithfulness": 0.938,
+      "answer_relevancy": 0.825,
+      "context_precision": 0.834,
+      "context_recall": 0.767,
+      "factual_correctness": 0.436,
+      "context_tokens": 1124,
+      "p50_latency_s": 1.3
+    }
+  ]
+}

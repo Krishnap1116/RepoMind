@@ -1,0 +1,917 @@
+id,question,answer,context_tokens,sources,latency_s,faithfulness,answer_relevancy,context_precision,context_recall,factual_correctness,ragas_judge,type,reference_answer,gold_files,hit@1,hit@5,mrr@10,recall@5,top1_kind,noncode@1,noncode_share@5,code_hit@1,code_mrr@10,config,refused
+q01,Where is the @app.route decorator defined?,"The `@app.route` decorator is defined in the `Scaffold.route` method in **`src/flask/sansio/scaffold.py`**, specifically in the **`route`** function (lines 360-365). 
+
+This method returns the `decorator` function which calls `self.add_url_rule()` to register the route and then returns the original view function.",669,"['tests/test_basic.py', 'src/flask/sansio/scaffold.py', 'tests/test_blueprints.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/blueprints.py', 'docs/patterns/viewdecorators.rst', 'docs/patterns/viewdecorators.rst', 'tests/test_basic.py', 'tests/test_blueprints.py', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/patterns/viewdecorators.rst', 'src/flask/cli.py', 'examples/tutorial/flaskr/__init__.py', 'tests/test_blueprints.py', 'src/flask/sansio/scaffold.py', 'docs/blueprints.rst', 'docs/patterns/lazyloading.rst', 'src/flask/cli.py', 'docs/lifecycle.rst']",2.39,0.7142857142857143,0.9187900454286474,0.499999999975,1.0,0.6,gpt-4o-mini,locate,"The route decorator is defined as Scaffold.route in src/flask/sansio/scaffold.py. It pops the optional endpoint from the options and calls self.add_url_rule(rule, endpoint, f, **options), then returns the original function.",['src/flask/sansio/scaffold.py'],0.0,1.0,0.5,1.0,tests,1.0,0.4,1.0,1.0,headers,
+q02,How does Flask decide which HTTP methods a route accepts when none are given?,"Flask decides the HTTP methods for a route in the function `App.add_url_rule` (file: `src/flask/sansio/app.py`, lines 618-627). Specifically:
+
+- If no `methods` argument is provided, Flask checks if the `view_func` has a `methods` attribute and uses that.
+- If neither `methods` is given nor `view_func.methods` exists, Flask defaults to `(""GET"",)`.
+- If `methods` is a string instead of a list/tuple, Flask raises a `TypeError`.
+
+Additionally, if `GET` is among the methods, Flask automatically adds support for `HEAD` and `OPTIONS` requests (docs/quickstart.rst, lines 331-337).",650,"['docs/quickstart.rst', 'src/flask/sansio/app.py', 'docs/quickstart.rst', 'docs/patterns/methodoverrides.rst', 'docs/api.rst', 'src/flask/app.py', 'docs/api.rst', 'src/flask/app.py', 'docs/errorhandling.rst', 'src/flask/wrappers.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/app.py', 'src/flask/cli.py', 'docs/api.rst', 'src/flask/sansio/app.py', 'src/flask/sansio/app.py', 'docs/errorhandling.rst', 'docs/patterns/methodoverrides.rst', 'docs/errorhandling.rst']",2.347,1.0,0.8773964582273533,0.94999999997625,1.0,0.5,gpt-4o-mini,explain,"In App.add_url_rule (src/flask/sansio/app.py), if methods is None it uses the view function's `methods` attribute, falling back to (""GET"",). Methods are uppercased, any `required_methods` from the view are added, and OPTIONS is added automatically when PROVIDE_AUTOMATIC_OPTIONS is enabled and OPTIONS was not explicitly given. Werkzeug adds HEAD automatically when GET is present.",['src/flask/sansio/app.py'],0.0,1.0,0.5,1.0,docs,1.0,0.8,1.0,1.0,headers,
+q03,What happens if two different view functions are registered with the same endpoint name?,"If two different view functions are registered with the same endpoint name, the latter registration will overwrite the former in the `view_functions` dictionary.
+
+Specifically, in **`src/flask/sansio/scaffold.py`**, inside the **`Scaffold.endpoint`** decorator (lines 435-464), the code:
+
+```python
+def decorator(f: F) -> F:
+    self.view_functions[endpoint] = f
+    return f
+```
+
+assigns the view function `f` to the key `endpoint` in `self.view_functions`. Since this is a dictionary, registering a second view function with the same endpoint key will replace the previous one.
+
+Thus, only the last registered view function for that endpoint will be called when the endpoint is accessed.",770,"['src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'docs/tutorial/views.rst', 'docs/api.rst', 'src/flask/sansio/scaffold.py', 'docs/blueprints.rst', 'docs/api.rst', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/app.py', 'docs/patterns/viewdecorators.rst', 'docs/views.rst', 'src/flask/sansio/blueprints.py', 'docs/tutorial/views.rst', 'docs/views.rst', 'src/flask/sansio/scaffold.py', 'tests/test_views.py', 'docs/patterns/lazyloading.rst', 'docs/views.rst', 'src/flask/views.py', 'docs/views.rst']",1.897,1.0,0.9097794046556033,0.8666666666377778,0.5,0.0,gpt-4o-mini,explain,"App.add_url_rule in src/flask/sansio/app.py checks self.view_functions for the endpoint; if a different function is already mapped it raises AssertionError(""View function mapping is overwriting an existing endpoint function: <endpoint>"").",['src/flask/sansio/app.py'],0.0,0.0,0.1111111111111111,0.0,code,0.0,0.4,0.0,0.2,headers,
+q04,"What error is raised if methods is passed as a string like methods=""POST""?","If `methods` is passed as a string (e.g., `methods=""POST""`), a **`TypeError`** is raised.
+
+This is shown in **`src/flask/sansio/app.py`**, function **`App.add_url_rule`** (lines 618-627):
+
+```python
+if isinstance(methods, str):
+    raise TypeError(
+        ""Allowed methods must be a list of strings, for""
+        ' example: @app.route(..., methods=[""POST""])'
+    )
+```
+
+Also confirmed by the test in **`tests/test_basic.py`**, function **`test_disallow_string_for_allowed_methods`** (lines 152-154), which expects a `TypeError` when `methods` is a string.",593,"['tests/test_basic.py', 'src/flask/sansio/app.py', 'docs/errorhandling.rst', 'docs/views.rst', 'docs/errorhandling.rst', 'docs/extensiondev.rst', 'docs/tutorial/blog.rst', 'docs/errorhandling.rst', 'docs/testing.rst', 'src/flask/views.py', 'docs/errorhandling.rst', 'docs/blueprints.rst', 'docs/patterns/methodoverrides.rst', 'src/flask/sansio/scaffold.py', 'tests/test_helpers.py', 'src/flask/debughelpers.py', 'src/flask/views.py', 'tests/test_basic.py', 'docs/views.rst', 'docs/errorhandling.rst']",2.026,0.9230769230769231,0.7749289253676303,0.9166666666361111,1.0,0.67,gpt-4o-mini,explain,"App.add_url_rule in src/flask/sansio/app.py raises a TypeError saying allowed methods must be a list of strings, for example @app.route(..., methods=[""POST""]).",['src/flask/sansio/app.py'],0.0,1.0,0.5,1.0,tests,1.0,0.8,1.0,1.0,headers,
+q05,Walk through what happens when a request reaches a Flask app via WSGI.,"When a request reaches a Flask app via WSGI, the following happens (from **docs/lifecycle.rst**, lines 72-125):
+
+1. The browser/client makes an HTTP request.
+2. The WSGI server receives the request.
+3. The WSGI server converts the HTTP request data into a WSGI `environ` dictionary.
+4. The WSGI server calls the Flask application object (the WSGI application) with the `environ`.
+5. Flask's `wsgi_app` method is called (**docs/reqcontext.rst**, lines 89-95).
+6. Inside `wsgi_app`:
+   - A `RequestContext` object is created, converting the `environ` into a `Request` object.
+   - An `AppContext` object is created.
+   - The app context is pushed, making `current_app` and `g` available.
+   - The `appcontext_pushed` signal is sent.
+   - The request context is pushed, making `request` and other request-bound proxies available.
+7. Flask matches the URL to a view function.
+8. The view function is called, and its return value is processed.
+9. Flask translates the view function's return into WSGI response data.
+10. The WSGI server sends the HTTP response back to the client.
+
+In summary, the WSGI server calls Flask’s `wsgi_app`, which sets up the application and request contexts, routes the request, executes the view, and returns the response.",688,"['docs/reqcontext.rst', 'docs/lifecycle.rst', 'docs/lifecycle.rst', 'docs/lifecycle.rst', 'docs/lifecycle.rst', 'docs/reqcontext.rst', 'docs/quickstart.rst', 'docs/reqcontext.rst', 'docs/deploying/index.rst', 'docs/appcontext.rst', 'docs/appcontext.rst', 'src/flask/ctx.py', 'src/flask/sansio/app.py', 'docs/patterns/appdispatch.rst', 'docs/lifecycle.rst', 'docs/lifecycle.rst', 'docs/quickstart.rst', 'src/flask/app.py', 'docs/reqcontext.rst', 'docs/lifecycle.rst']",3.342,1.0,0.8915262429360101,0.99999999998,0.0,0.52,gpt-4o-mini,multi_file,"Flask.__call__ calls wsgi_app (src/flask/app.py). wsgi_app creates a RequestContext and pushes it (which pushes an app context, opens the session and matches the URL in src/flask/ctx.py), then calls full_dispatch_request. That sends request_started, runs preprocess_request (url_value_preprocessors and before_request functions), then dispatch_request calls the view function for the matched endpoint. The result goes through finalize_request -> make_response -> process_response (after_request functions and session saving). Unhandled exceptions go to handle_exception. Finally the context is popped, running teardown functions.","['src/flask/app.py', 'src/flask/ctx.py']",0.0,0.0,0.0,0.0,docs,1.0,1.0,1.0,1.0,headers,
+q06,How does dispatch_request handle an automatic OPTIONS request?,"In `src/flask/app.py`, within the `Flask.dispatch_request` function (lines 885-902), if the matched URL rule has `provide_automatic_options` set to `True` and the incoming request method is `OPTIONS`, `dispatch_request` returns the default automatic OPTIONS response by calling `self.make_default_options_response()`.
+
+Otherwise, it dispatches the request to the view function for that endpoint.
+
+So, **automatic OPTIONS requests are handled by returning the default OPTIONS response without calling the view function**.",655,"['src/flask/app.py', 'src/flask/app.py', 'docs/api.rst', 'src/flask/views.py', 'tests/test_views.py', 'CHANGES.rst', 'docs/config.rst', 'docs/api.rst', 'src/flask/app.py', 'docs/reqcontext.rst', 'tests/test_views.py', 'docs/views.rst', 'src/flask/app.py', 'docs/api.rst', 'tests/test_views.py', 'docs/reqcontext.rst', 'src/flask/views.py', 'docs/api.rst', 'src/flask/views.py', 'src/flask/ctx.py']",2.279,1.0,0.904786712668103,0.94999999997625,1.0,0.67,gpt-4o-mini,explain,"In Flask.dispatch_request (src/flask/app.py), if the matched rule has provide_automatic_options set and the request method is OPTIONS, it returns self.make_default_options_response() instead of calling the view function.",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,headers,
+q07,What return types can a view function return and how are they converted to a response?,"The allowed return types and their conversions are described in **`Flask.make_response`** (in `src/flask/app.py` around lines 1133-1143 and 1235-1253) and the documentation in `docs/quickstart.rst` (lines 683-691):
+
+- **`str`**: Converted into a response object with the string as the response body, status code `200 OK`, and mimetype `text/html`.
+- **`bytes`**: Converted into a response object with the bytes as the response body.
+- **`dict` or `list`**: Passed to `jsonify()` to produce a JSON response.
+- **`tuple`**: Can include `(body, status)`, `(body, headers)`, or `(body, status, headers)` to customize the response.
+- **`Response` instance**: Returned unchanged.
+- **WSGI callable**: Returned as is.
+
+Returning `None` or not returning a value is **not allowed** and raises a `TypeError`.
+
+In summary, view functions can return `str`, `bytes`, `dict`, `list`, `tuple` (with status or headers), a `Response` instance, or a WSGI callable, and Flask converts these appropriately into a response object.",632,"['docs/quickstart.rst', 'src/flask/app.py', 'src/flask/app.py', 'docs/tutorial/views.rst', 'src/flask/app.py', 'docs/quickstart.rst', 'src/flask/views.py', 'docs/quickstart.rst', 'docs/lifecycle.rst', 'src/flask/helpers.py', 'src/flask/helpers.py', 'src/flask/app.py', 'docs/reqcontext.rst', 'docs/tutorial/views.rst', 'src/flask/app.py', 'src/flask/app.py', 'src/flask/helpers.py', 'CHANGES.rst', 'docs/reqcontext.rst', 'docs/views.rst']",2.243,0.5833333333333334,0.7250609193635862,0.94999999997625,1.0,0.59,gpt-4o-mini,explain,"Flask.make_response in src/flask/app.py accepts str or bytes (body of a response_class), dict or list (converted with self.json.response, i.e. JSON), a generator/iterator (streamed response), a tuple of (body, status, headers), (body, status) or (body, headers), a response_class instance (returned as-is), another Werkzeug Response or a WSGI callable (coerced with response_class.force_type). Returning None raises a TypeError.",['src/flask/app.py'],0.0,1.0,0.5,1.0,docs,1.0,0.4,1.0,1.0,headers,
+q08,What error does Flask raise if a view function returns None?,"Flask raises a `TypeError` if a view function returns `None`.
+
+Specifically, in **`src/flask/app.py`**, inside the **`Flask.make_response`** function (lines 1210-1216), the code checks if the return value `rv` is `None` and raises this error with the message:
+
+```
+The view function for {request.endpoint!r} did not return a valid response. The function either returned None or ended without a return statement.
+```",570,"['src/flask/app.py', 'src/flask/app.py', 'src/flask/views.py', 'src/flask/app.py', 'src/flask/wrappers.py', 'src/flask/app.py', 'src/flask/views.py', 'src/flask/sansio/scaffold.py', 'docs/tutorial/views.rst', 'CHANGES.rst', 'tests/test_views.py', 'src/flask/app.py', 'src/flask/views.py', 'src/flask/sansio/app.py', 'src/flask/views.py', 'src/flask/views.py', 'docs/reqcontext.rst', 'src/flask/sansio/app.py', 'src/flask/app.py', 'src/flask/app.py']",1.301,1.0,0.9677804876470896,0.9166666666361111,1.0,0.86,gpt-4o-mini,explain,"Flask.make_response in src/flask/app.py raises a TypeError: ""The view function for <endpoint> did not return a valid response. The function either returned None or ended without a return statement.""",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.0,1.0,1.0,headers,
+q09,In what order does Flask look up a registered error handler for an exception?,"Flask looks up a registered error handler for an exception in this order (from **src/flask/sansio/app.py**, function **App._find_error_handler**):
+
+1. Blueprint handler for a specific HTTP status code  
+2. App handler for a specific HTTP status code  
+3. Blueprint handler for the exception class (considering class hierarchy)  
+4. App handler for the exception class (considering class hierarchy)  
+5. Returns `None` if no suitable handler is found  
+
+This means Flask first tries to find handlers by HTTP code scoped to blueprints, then app-wide, then by exception class scoped to blueprints, then app-wide.",652,"['docs/errorhandling.rst', 'docs/errorhandling.rst', 'src/flask/sansio/app.py', 'src/flask/app.py', 'src/flask/app.py', 'docs/errorhandling.rst', 'docs/reqcontext.rst', 'src/flask/app.py', 'docs/errorhandling.rst', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/app.py', 'src/flask/app.py', 'docs/errorhandling.rst', 'src/flask/sansio/app.py', 'src/flask/app.py', 'src/flask/app.py', 'src/flask/sansio/app.py', 'src/flask/app.py']",1.358,1.0,0.8836696051596182,0.8041666666465626,1.0,0.92,gpt-4o-mini,explain,"App._find_error_handler in src/flask/sansio/app.py searches: blueprint handler for the specific status code, app handler for the code, then blueprint handler for the exception class, then app handler for the class, walking the exception class MRO in each map. It returns None if nothing matches.",['src/flask/sansio/app.py'],0.0,1.0,0.3333333333333333,1.0,docs,1.0,0.4,1.0,1.0,headers,
+q10,What does Flask do with an unhandled exception in production versus debug mode?,"In production mode (when debug is off), Flask logs the original exception and returns a generic 500 Internal Server Error page (see `Flask.handle_exception` in `src/flask/app.py` lines 811-821).
+
+In debug mode (when `PROPAGATE_EXCEPTIONS` is True), Flask re-raises the exception so the interactive debugger can display it instead of showing a generic error page (also in `Flask.handle_exception`).
+
+Additionally, from `Flask.run` (lines 572-580), to enable the debugger without code reloading, you run with `debug=True` and `use_reloader=False`.
+
+Summary:
+- **Production mode:** Log exception + show generic 500 error page.
+- **Debug mode:** Re-raise exception to show interactive debugger.",643,"['src/flask/app.py', 'docs/errorhandling.rst', 'src/flask/app.py', 'src/flask/app.py', 'docs/debugging.rst', 'src/flask/app.py', 'src/flask/app.py', 'src/flask/sansio/app.py', 'src/flask/app.py', 'src/flask/app.py', 'docs/errorhandling.rst', 'CHANGES.rst', 'docs/reqcontext.rst', 'docs/debugging.rst', 'docs/debugging.rst', 'src/flask/app.py', 'src/flask/app.py', 'docs/quickstart.rst', 'docs/errorhandling.rst', 'src/flask/app.py']",1.659,1.0,0.9062720325942505,0.8041666666465626,0.6666666666666666,0.31,gpt-4o-mini,explain,"Flask.handle_exception in src/flask/app.py sends got_request_exception, then checks PROPAGATE_EXCEPTIONS (defaulting to testing or debug). If propagating, the exception is re-raised so the debugger shows it. Otherwise it logs the exception with log_exception, wraps it in InternalServerError(original_exception=e), calls a registered 500 handler if one exists, and finalizes the response with from_error_handler=True.",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,headers,
+q11,Why aren't RoutingExceptions passed to user error handlers?,"RoutingExceptions aren't passed to user error handlers because they are used internally by Flask to trigger routing actions such as slash redirects (e.g., raising `RequestRedirect`). This internal mechanism means they are not meant to be raised or handled in user code.
+
+This is explicitly handled in the function `Flask.handle_http_exception` in **src/flask/app.py** (lines 761-772), where the code checks:
+
+```python
+if isinstance(e, RoutingException):
+    return e
+```
+
+and returns the exception unchanged instead of passing it to user-defined error handlers.",627,"['src/flask/app.py', 'src/flask/app.py', 'docs/errorhandling.rst', 'docs/errorhandling.rst', 'docs/blueprints.rst', 'docs/errorhandling.rst', 'CHANGES.rst', 'src/flask/app.py', 'tests/test_user_error_handler.py', 'CHANGES.rst', 'docs/errorhandling.rst', 'tests/test_user_error_handler.py', 'src/flask/app.py', 'src/flask/debughelpers.py', 'docs/errorhandling.rst', 'docs/errorhandling.rst', 'docs/errorhandling.rst', 'src/flask/app.py', 'docs/errorhandling.rst', 'tests/test_user_error_handler.py']",1.238,1.0,0.9010760448489017,0.999999999975,1.0,0.73,gpt-4o-mini,explain,"In Flask.handle_http_exception (src/flask/app.py), RoutingException instances such as RequestRedirect are used internally for routing actions like slash redirects, so they are returned unchanged and not passed to error handlers. Exceptions with no code (proxy exceptions) are also returned unchanged.",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,headers,
+q12,Where is the errorhandler decorator implemented?,"The `errorhandler` decorator is implemented in the file **`src/flask/sansio/scaffold.py`**, specifically in the **`Scaffold.errorhandler`** method (lines 597-608 and 631-639). It returns a decorator function that calls `self.register_error_handler` with the given code or exception and the decorated function.",677,"['src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/blueprints.py', 'docs/errorhandling.rst', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'tests/test_blueprints.py', 'src/flask/sansio/app.py', 'CHANGES.rst', 'tests/test_blueprints.py', 'src/flask/sansio/app.py', 'docs/lifecycle.rst', 'docs/errorhandling.rst', 'src/flask/sansio/scaffold.py', 'docs/errorhandling.rst', 'tests/test_user_error_handler.py', 'src/flask/sansio/scaffold.py', 'tests/test_user_error_handler.py', 'src/flask/sansio/blueprints.py']",1.312,1.0,0.8810780457069857,0.9999999999666667,0.6666666666666666,0.44,gpt-4o-mini,locate,"Scaffold.errorhandler in src/flask/sansio/scaffold.py; it is a decorator that calls register_error_handler(code_or_exception, f), which stores the handler in error_handler_spec keyed by blueprint name, status code and exception class.",['src/flask/sansio/scaffold.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,headers,
+q13,How are sessions stored by default in Flask?,"Sessions in Flask are stored by default in a signed cookie sent to the browser. The session data is serialized and stored client-side in the cookie, which is cryptographically signed using the app's secret key to prevent tampering.
+
+This is explained in multiple places:
+- **docs/tutorial/views.rst** (lines 211-215): ""The data is stored in a *cookie* that is sent to the browser... Flask securely *signs* the data so that it can't be tampered with.""
+- **docs/api.rst** (lines 56-65): ""A session makes it possible to remember information... Flask does this by using a signed cookie.""
+- **docs/quickstart.rst** (lines 771-781): ""This is implemented on top of cookies for you and signs the cookies cryptographically.""
+
+So, by default, Flask sessions are client-side, cookie-based, and signed for security.",609,"['docs/tutorial/views.rst', 'docs/api.rst', 'docs/quickstart.rst', 'docs/tutorial/views.rst', 'docs/quickstart.rst', 'docs/lifecycle.rst', 'docs/api.rst', 'src/flask/sessions.py', 'docs/quickstart.rst', 'src/flask/sessions.py', 'src/flask/ctx.py', 'src/flask/helpers.py', 'docs/quickstart.rst', 'src/flask/sessions.py', 'docs/patterns/sqlalchemy.rst', 'src/flask/sansio/app.py', 'src/flask/sessions.py', 'docs/config.rst', 'docs/config.rst', 'CHANGES.rst']",1.955,1.0,0.9623829171441526,0.94999999997625,0.5,0.67,gpt-4o-mini,explain,"The default SecureCookieSessionInterface in src/flask/sessions.py stores the session in a cookie signed with itsdangerous URLSafeTimedSerializer using the app's SECRET_KEY (plus SECRET_KEY_FALLBACKS), salt ""cookie-session"", HMAC key derivation and SHA-1 digest, with a tagged JSON serializer. The data is signed, not encrypted.",['src/flask/sessions.py'],0.0,0.0,0.125,0.0,docs,1.0,1.0,1.0,1.0,headers,
+q14,What happens to the session if the app has no SECRET_KEY set?,"If the app has no `SECRET_KEY` set, the session becomes unavailable for writing and will raise a `RuntimeError` when you try to modify it. This is handled in the `NullSession` class in **src/flask/sessions.py**, where `_fail()` raises this error with the message:
+
+```
+""The session is unavailable because no secret key was set. Set the secret_key on the application to something unique and secret.""
+```
+
+You can still read from an empty session, but any attempt to set session data will fail.",661,"['docs/api.rst', 'src/flask/sessions.py', 'docs/quickstart.rst', 'tests/test_basic.py', 'docs/config.rst', 'docs/tutorial/deploy.rst', 'docs/tutorial/factory.rst', 'src/flask/sansio/app.py', 'docs/quickstart.rst', 'docs/config.rst', 'tests/test_basic.py', 'src/flask/sessions.py', 'docs/quickstart.rst', 'docs/config.rst', 'src/flask/sessions.py', 'docs/quickstart.rst', 'src/flask/sessions.py', 'docs/quickstart.rst', 'docs/web-security.rst', 'docs/tutorial/deploy.rst']",1.218,1.0,0.9064673123398285,0.8666666666377778,1.0,0.5,gpt-4o-mini,explain,"SecureCookieSessionInterface.get_signing_serializer in src/flask/sessions.py returns None when app.secret_key is not set, so open_session returns None. RequestContext.push in src/flask/ctx.py then uses session_interface.make_null_session, a NullSession that raises an error if you try to modify it.","['src/flask/sessions.py', 'src/flask/ctx.py']",0.0,1.0,0.5,0.5,docs,1.0,0.8,1.0,1.0,headers,
+q15,What happens when a session cookie has an invalid signature?,"In **src/flask/sessions.py**, within the function **SecureCookieSessionInterface.open_session** (lines 347-348), when a session cookie has an invalid signature (raises `BadSignature`), the code returns a new empty session instance:
+
+```python
+except BadSignature:
+    return self.session_class()
+```
+
+This means the invalid session cookie is ignored and treated as if there is no existing session.",569,"['docs/config.rst', 'src/flask/sessions.py', 'docs/quickstart.rst', 'docs/web-security.rst', 'src/flask/sessions.py', 'docs/web-security.rst', 'docs/config.rst', 'src/flask/sessions.py', 'src/flask/sessions.py', 'src/flask/sessions.py', 'docs/config.rst', 'src/flask/sessions.py', 'docs/config.rst', 'src/flask/sessions.py', 'docs/web-security.rst', 'docs/config.rst', 'docs/web-security.rst', 'src/flask/sessions.py', 'docs/config.rst', 'src/flask/sessions.py']",1.133,0.25,0.8869530148123669,0.6388888888675925,1.0,0.86,gpt-4o-mini,explain,"In SecureCookieSessionInterface.open_session (src/flask/sessions.py), s.loads(val, max_age=...) raising BadSignature is caught and a new empty session_class() is returned, so the tampered or expired cookie is ignored.",['src/flask/sessions.py'],0.0,1.0,0.5,1.0,docs,1.0,0.6,1.0,1.0,headers,
+q16,When does Flask delete the session cookie?,"Flask deletes the session cookie in the `SecureCookieSessionInterface.save_session` method (file: `src/flask/sessions.py`, lines 365-377) when the session is empty **and** has been modified. In that case, it calls `response.delete_cookie()` to remove the cookie.",629,"['src/flask/sessions.py', 'src/flask/sessions.py', 'docs/web-security.rst', 'docs/quickstart.rst', 'docs/web-security.rst', 'docs/config.rst', 'src/flask/sessions.py', 'src/flask/sessions.py', 'docs/quickstart.rst', 'docs/tutorial/views.rst', 'src/flask/sessions.py', 'docs/patterns/sqlalchemy.rst', 'src/flask/sessions.py', 'docs/api.rst', 'CHANGES.rst', 'src/flask/testing.py', 'src/flask/sessions.py', 'docs/config.rst', 'docs/lifecycle.rst', 'docs/web-security.rst']",1.192,0.6666666666666666,0.8890728857353366,0.99999999998,1.0,0.6,gpt-4o-mini,explain,"In SecureCookieSessionInterface.save_session (src/flask/sessions.py), if the session is empty and was modified, response.delete_cookie is called with the cookie name, domain, path, secure, partitioned, samesite and httponly settings, and Vary: Cookie is added. If it is empty and unmodified, nothing is set.",['src/flask/sessions.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,headers,
+q17,Which extra Python types can be stored in the session beyond plain JSON?,"In **src/flask/sessions.py**, the `SecureCookieSessionInterface` uses a JSON-derived serializer (`session_json_serializer`) that supports extra Python types such as **datetime objects** and **tuples** beyond plain JSON types.",648,"['docs/quickstart.rst', 'src/flask/json/tag.py', 'src/flask/json/provider.py', 'src/flask/sessions.py', 'CHANGES.rst', 'src/flask/sessions.py', 'tests/test_basic.py', 'docs/tutorial/views.rst', 'CHANGES.rst', 'src/flask/wrappers.py', 'tests/test_basic.py', 'CHANGES.rst', 'tests/test_basic.py', 'docs/api.rst', 'src/flask/json/provider.py', 'CHANGES.rst', 'tests/test_json.py', 'docs/quickstart.rst', 'docs/config.rst', 'src/flask/helpers.py']",1.314,1.0,0.7135839688162258,0.49999999995,0.5,0.0,gpt-4o-mini,explain,"The TaggedJSONSerializer in src/flask/json/tag.py supports dict, tuple, bytes, markupsafe Markup, uuid.UUID and datetime via its default tags (TagDict, PassDict, TagTuple, PassList, TagBytes, TagMarkup, TagUUID, TagDateTime). Custom tags can be added with register().",['src/flask/json/tag.py'],0.0,1.0,0.5,1.0,docs,1.0,0.4,1.0,1.0,headers,
+q18,What is the default lifetime of a permanent session?,"The default lifetime of a permanent session is **31 days**.
+
+- In **src/flask/sansio/app.py**, the attribute `permanent_session_lifetime` defaults to `timedelta(days=31)`.
+- In **docs/config.rst** and **docs/api.rst**, it is documented that `PERMANENT_SESSION_LIFETIME` defaults to 31 days (2678400 seconds).
+- In **src/flask/sessions.py**, the expiration time for a permanent session is calculated as `now + app.permanent_session_lifetime`.
+
+So, by default, a permanent session lasts for 31 days.",635,"['docs/api.rst', 'docs/config.rst', 'src/flask/sansio/app.py', 'docs/api.rst', 'src/flask/sessions.py', 'docs/web-security.rst', 'docs/config.rst', 'docs/web-security.rst', 'tests/test_basic.py', 'src/flask/sessions.py', 'docs/config.rst', 'docs/config.rst', 'src/flask/sansio/app.py', 'docs/config.rst', 'src/flask/sessions.py', 'src/flask/sessions.py', 'tests/test_basic.py', 'docs/api.rst', 'src/flask/sessions.py', 'src/flask/sessions.py']",1.739,1.0,0.9184525277827809,0.999999999975,0.0,0.29,gpt-4o-mini,config,PERMANENT_SESSION_LIFETIME defaults to timedelta(days=31) in Flask.default_config in src/flask/app.py.,['src/flask/app.py'],0.0,0.0,0.0,0.0,docs,1.0,0.6,0.0,0.0,headers,
+q19,How does Config.from_prefixed_env load environment variables?,"The method `Config.from_prefixed_env` (defined in **src/flask/config.py**, lines ~126-170) loads environment variables as follows:
+
+- It scans all environment variables for keys starting with a given prefix (default `""FLASK_""`).
+- For each matching key, it removes the prefix and uses the remainder as the config key.
+- It attempts to convert the environment variable's string value by passing it through a loader function (`loads`), which defaults to `json.loads`.
+- If the loader raises an error, the value remains a string.
+- The config key-value pairs are then set in the config object.
+- Keys are processed in sorted order.
+- Nested keys (containing `""__""`) are handled differently (not shown fully here).
+
+This allows loading typed config values directly from environment variables prefixed with `""FLASK_""` (or a custom prefix). For example, `FLASK_SECRET_KEY` becomes `config[""SECRET_KEY""]`.
+
+This behavior and usage are documented in **docs/config.rst** around lines 540-598.",726,"['src/flask/config.py', 'docs/config.rst', 'src/flask/config.py', 'src/flask/config.py', 'docs/config.rst', 'src/flask/config.py', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'src/flask/cli.py', 'src/flask/config.py', 'src/flask/config.py', 'tests/test_config.py', 'src/flask/config.py', 'src/flask/config.py', 'src/flask/app.py', 'tests/test_config.py', 'tests/test_config.py', 'docs/config.rst']",1.943,1.0,0.9540444965339153,0.99999999998,1.0,0.87,gpt-4o-mini,explain,"Config.from_prefixed_env in src/flask/config.py iterates sorted os.environ keys starting with the prefix (default FLASK_), strips the prefix, tries to parse each value with json.loads (keeping it as a string on failure), and sets it on the config. Keys containing double underscores (__) set values in nested dicts, creating intermediate dicts if needed.",['src/flask/config.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,headers,
+q20,Which attributes does config.from_object load?,"In **src/flask/config.py**, function **Config.from_object** (lines 218-254), `config.from_object` loads **only the uppercase attributes** of the given object (module or class instance). It ignores all attributes that are not fully uppercase.",646,"['src/flask/config.py', 'src/flask/config.py', 'docs/config.rst', 'src/flask/config.py', 'src/flask/config.py', 'src/flask/config.py', 'docs/config.rst', 'docs/config.rst', 'tests/test_config.py', 'docs/config.rst', 'src/flask/config.py', 'src/flask/config.py', 'src/flask/config.py', 'tests/test_config.py', 'src/flask/config.py', 'docs/config.rst', 'docs/config.rst', 'docs/tutorial/factory.rst', 'src/flask/config.py', 'docs/tutorial/factory.rst']",0.943,1.0,0.8217697933074141,0.99999999998,1.0,0.57,gpt-4o-mini,explain,"Config.from_object in src/flask/config.py imports the object if given a string (import_string), then copies only attributes whose names are uppercase (key.isupper()). A dict will not work because its keys are not attributes.",['src/flask/config.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,headers,
+q21,How does the flask CLI find the application in a module?,"The flask CLI uses the function `locate_app` in **src/flask/cli.py** to find the application in a module.
+
+- It first imports the module by name (`module = sys.modules[module_name]`).
+- If no `app_name` is provided, it calls `find_best_app(module)` which looks for common app variable names like `""app""` or `""application""` in the module and returns the first instance of `Flask` it finds.
+- If an `app_name` is provided, it calls `find_app_by_string(module, app_name)` which checks if the name corresponds to a variable or a function in the module, returning the Flask app instance accordingly.
+
+In summary, the CLI either:
+- Finds the app by common attribute names (`app` or `application`) if no explicit app name is given, or
+- Resolves the app by the given string name, supporting variables or factory functions.
+
+This logic is primarily in the **locate_app** function (lines 259-264) which delegates to **find_best_app** (lines 41-52) or **find_app_by_string** (lines 120-124).",530,"['src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'docs/cli.rst', 'docs/appcontext.rst', 'src/flask/cli.py', 'docs/patterns/appfactories.rst', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'docs/patterns/appfactories.rst', 'docs/patterns/packages.rst', 'src/flask/cli.py']",2.157,1.0,0.9247632065364749,0.99999999998,0.25,0.21,gpt-4o-mini,explain,"find_best_app in src/flask/cli.py first looks for attributes named app or application that are Flask instances, then for exactly one Flask instance among module attributes (raising NoAppException if several), then for a factory function named create_app or make_app which it calls with no arguments. If nothing is found it raises NoAppException.",['src/flask/cli.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,headers,
+q22,"How does Flask load .env and .flaskenv files, and which wins?","Flask loads `.env` and `.flaskenv` files using the `load_dotenv` function in **`src/flask/cli.py` (lines 704-714)**. This function loads environment variables from these files if `python-dotenv` is installed.
+
+The precedence order when loading is:
+1. A given explicit path (e.g., via `--env-file` option)
+2. `.env`
+3. `.flaskenv`
+
+Variables already set in the environment (`os.environ`) take highest precedence and are not overwritten.
+
+So, `.env` variables override `.flaskenv` variables, but both are overridden by any explicitly specified env file or existing environment variables.",691,"['src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'src/flask/cli.py', 'src/flask/app.py', 'src/flask/app.py', 'src/flask/cli.py', 'src/flask/helpers.py', 'src/flask/cli.py', 'docs/cli.rst', 'src/flask/cli.py', 'src/flask/config.py', 'docs/cli.rst', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'docs/cli.rst', 'CHANGES.rst']",1.492,1.0,0.8856113463083992,0.99999999998,0.6666666666666666,0.86,gpt-4o-mini,explain,"load_dotenv in src/flask/cli.py uses python-dotenv to load .flaskenv then .env (found from the current directory), so .env values override .flaskenv, and an explicit path overrides both. Variables already in os.environ are never overwritten. If python-dotenv isn't installed it prints a tip and returns False.",['src/flask/cli.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,headers,
+q23,How does Flask determine whether debug mode is enabled from the environment?,"Flask determines whether debug mode is enabled from the environment in the function `get_debug_flag()` in the file `src/flask/helpers.py`. It checks the `FLASK_DEBUG` environment variable and returns `True` unless the variable is unset or set to `""0""`, `""false""`, or `""no""` (case-insensitive). Specifically:
+
+```python
+val = os.environ.get(""FLASK_DEBUG"")
+return bool(val and val.lower() not in {""0"", ""false"", ""no""})
+```
+
+So, debug mode is enabled if `FLASK_DEBUG` is set to any value other than these false-like strings.",693,"['src/flask/helpers.py', 'src/flask/sansio/app.py', 'docs/config.rst', 'docs/quickstart.rst', 'docs/debugging.rst', 'docs/debugging.rst', 'src/flask/app.py', 'docs/cli.rst', 'src/flask/app.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/config.rst', 'docs/config.rst', 'src/flask/cli.py', 'src/flask/helpers.py', 'docs/config.rst', 'src/flask/app.py', 'docs/cli.rst', 'src/flask/sansio/app.py', 'CHANGES.rst']",1.299,1.0,0.9374070122225615,0.8333333332916666,1.0,0.91,gpt-4o-mini,explain,"get_debug_flag in src/flask/helpers.py reads FLASK_DEBUG and returns True if it is set and its lowercase value is not ""0"", ""false"" or ""no"".",['src/flask/helpers.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,headers,
+q24,Why does calling app.run() do nothing when using the flask run command?,"Calling `app.run()` does nothing when using the `flask run` command because the Flask CLI replaces the `Flask.run` method in most cases. This is explained in:
+
+- **File:** `docs/cli.rst` (lines 69-76)  
+  It states that the `flask run` command starts the development server and replaces the `Flask.run` method.
+
+- **File:** `src/flask/app.py` (lines 615-619) inside `Flask.run`  
+  There is a warning indicating that `app.run()` should only be called inside an `if __name__ == ""__main__""` guard, implying that when using the `flask run` CLI, the CLI handles running the server instead of `app.run()`.
+
+Thus, when you run `flask run`, the CLI takes control of starting the server, and calling `app.run()` inside your code has no effect because the CLI does not invoke it.",597,"['src/flask/app.py', 'docs/cli.rst', 'src/flask/app.py', 'docs/patterns/appfactories.rst', 'src/flask/app.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/quickstart.rst', 'docs/server.rst', 'docs/server.rst', 'docs/cli.rst', 'docs/tutorial/install.rst', 'src/flask/cli.py', 'docs/tutorial/factory.rst', 'docs/testing.rst', 'src/flask/app.py', 'src/flask/app.py', 'docs/cli.rst', 'src/flask/app.py', 'src/flask/cli.py']",2.583,1.0,0.9618969238176115,0.94999999997625,0.0,0.5,gpt-4o-mini,explain,"Flask.run in src/flask/app.py checks if FLASK_RUN_FROM_CLI is ""true""; if so it prints a warning (unless in the reloader) that it is ignoring app.run() because it would block the flask CLI command, and returns without starting a server.",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,headers,
+q25,What host and port does app.run use by default?,"In the file **src/flask/app.py**, function **Flask.run** (lines 582-614):
+
+- The default **host** is `'127.0.0.1'` unless overridden by the `SERVER_NAME` config variable, in which case the host part of `SERVER_NAME` is used.
+- The default **port** is `5000` unless overridden by the port part of the `SERVER_NAME` config variable.
+
+So by default, `app.run()` listens on `127.0.0.1:5000` unless `SERVER_NAME` is set, which changes these defaults accordingly.",731,"['src/flask/app.py', 'src/flask/app.py', 'CHANGES.rst', 'src/flask/app.py', 'docs/patterns/appdispatch.rst', 'src/flask/app.py', 'docs/cli.rst', 'src/flask/app.py', 'docs/cli.rst', 'src/flask/app.py', 'CHANGES.rst', 'docs/patterns/appdispatch.rst', 'docs/server.rst', 'src/flask/app.py', 'src/flask/app.py', 'src/flask/cli.py', 'docs/server.rst', 'src/flask/sansio/app.py', 'src/flask/app.py', 'src/flask/testing.py']",1.307,1.0,0.8101628825265323,0.49999999995,0.5,0.82,gpt-4o-mini,config,"Flask.run in src/flask/app.py defaults to host 127.0.0.1 and port 5000, unless SERVER_NAME in the config provides a host/port. It also enables the reloader and debugger when debug is on and runs threaded by default via werkzeug's run_simple.",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,headers,
+q26,What happens when a request context is pushed?,"When a request context is pushed (see **docs/reqcontext.rst**, lines 26-42 and 97-102):
+
+- A `RequestContext` object is created and pushed.
+- This also creates and pushes an `AppContext` first if the application context is not already on top.
+- While these contexts are pushed, proxies like `current_app`, `g`, `request`, and `session` become available to the thread handling the request.
+
+In short, pushing a request context ensures both the request and application contexts are active, making request-specific and app-specific variables accessible during the request lifecycle.",576,"['docs/reqcontext.rst', 'docs/appcontext.rst', 'docs/reqcontext.rst', 'docs/api.rst', 'docs/reqcontext.rst', 'src/flask/ctx.py', 'src/flask/app.py', 'docs/reqcontext.rst', 'docs/reqcontext.rst', 'src/flask/app.py', 'docs/api.rst', 'docs/reqcontext.rst', 'docs/reqcontext.rst', 'docs/api.rst', 'src/flask/ctx.py', 'src/flask/app.py', 'src/flask/ctx.py', 'docs/shell.rst', 'docs/testing.rst', 'docs/lifecycle.rst']",1.436,0.5,0.9064984016055081,0.9999999999,0.0,0.67,gpt-4o-mini,explain,"RequestContext.push in src/flask/ctx.py pushes an app context if none is active for this app, sets the request context var, opens the session via app.session_interface.open_session (falling back to make_null_session), and then matches the request URL so the session is available to URL converters.",['src/flask/ctx.py'],0.0,0.0,0.16666666666666666,0.0,docs,1.0,1.0,1.0,1.0,headers,
+q27,What object backs flask.g and where is it defined?,"The object backing `flask.g` is an instance of the class assigned to `Flask.app_ctx_globals_class`, which defaults to `ctx._AppCtxGlobals`.
+
+This is documented in **docs/api.rst** around lines 163-174:
+
+- `g` is a namespace object storing data during an application context.
+- It is an instance of `Flask.app_ctx_globals_class`.
+- The default class is `ctx._AppCtxGlobals`.
+
+The exact class `ctx._AppCtxGlobals` is defined elsewhere in the Flask codebase (not shown in the provided snippets), but `flask.g` is a proxy to an instance of that class created per application context.",619,"['docs/extensiondev.rst', 'docs/api.rst', 'src/flask/app.py', 'docs/design.rst', 'src/flask/sansio/app.py', 'src/flask/ctx.py', 'src/flask/ctx.py', 'CHANGES.rst', 'src/flask/sansio/app.py', 'docs/design.rst', 'docs/quickstart.rst', 'docs/index.rst', 'docs/patterns/deferredcallbacks.rst', 'docs/design.rst', 'src/flask/app.py', 'docs/appcontext.rst', 'docs/quickstart.rst', 'README.md', 'src/flask/sansio/app.py', 'docs/design.rst']",1.548,0.7142857142857143,0.8605684690759154,0.49999999995,0.5,0.18,gpt-4o-mini,locate,"flask.g is backed by _AppCtxGlobals in src/flask/ctx.py, a plain namespace object created with each application context. It supports get, pop, setdefault, `in` and iteration.",['src/flask/ctx.py'],0.0,0.0,0.16666666666666666,0.0,docs,1.0,0.6,0.0,0.3333333333333333,headers,
+q28,How does after_this_request work?,"The function `after_this_request` is defined in **src/flask/ctx.py** (lines 117-152). It registers a callback function `f` to be executed after the current request finishes.
+
+**How it works:**
+- It first checks if a request context is active (`ctx = _cv_request.get(None)`).
+- If no request context is active, it raises a `RuntimeError` because it can only be used during a request.
+- If the context exists, it appends the callback function `f` to the context's `_after_request_functions` list.
+- The registered function `f` will be called later with the response object, allowing it to modify or replace the response before it is sent.
+- Finally, it returns the original function `f`.
+
+This mechanism allows deferring execution of code until after the current request, useful for modifying the response or performing cleanup specific to that request.
+
+Additional context from **docs/lifecycle.rst** confirms that these `after_this_request` callbacks run before the global `after_request` handlers and before the session is saved.",616,"['src/flask/ctx.py', 'src/flask/ctx.py', 'docs/lifecycle.rst', 'src/flask/sansio/scaffold.py', 'docs/patterns/deferredcallbacks.rst', 'src/flask/sansio/scaffold.py', 'src/flask/ctx.py', 'src/flask/sansio/blueprints.py', 'docs/reqcontext.rst', 'docs/patterns/deferredcallbacks.rst', 'docs/reqcontext.rst', 'docs/reqcontext.rst', 'src/flask/ctx.py', 'docs/patterns/viewdecorators.rst', 'src/flask/app.py', 'docs/reqcontext.rst', 'docs/reqcontext.rst', 'docs/api.rst', 'tests/test_basic.py', 'CHANGES.rst']",1.867,1.0,0.8456323190079394,0.94999999997625,0.5,0.73,gpt-4o-mini,explain,"after_this_request in src/flask/ctx.py appends the function to the current request context's _after_request_functions list (raising RuntimeError if no request context is active). Flask.process_response in src/flask/app.py calls these functions first with the response, before the app and blueprint after_request functions.","['src/flask/ctx.py', 'src/flask/app.py']",1.0,1.0,1.0,0.5,code,0.0,0.4,1.0,1.0,headers,
+q29,In what order are before_request and after_request functions called for blueprints and the app?,"The code snippets do not explicitly show the order in which `before_request` and `after_request` functions are called for blueprints and the app.
+
+However, based on Flask's documented behavior (implied by the comments and method names):
+
+- **`before_request` functions:**
+  - For the app: all registered app-level `before_request` functions run before every request.
+  - For blueprints: blueprint-level `before_request` functions run only before requests handled by that blueprint.
+  - Blueprint `before_app_request` functions run before *every* request, regardless of blueprint.
+
+- **`after_request` functions:**
+  - For the app: all registered app-level `after_request` functions run after every request.
+  - For blueprints: blueprint-level `after_request` functions run only after requests handled by that blueprint.
+  - Blueprint `after_app_request` functions run after *every* request, regardless of blueprint.
+
+**Typical execution order (Flask standard behavior):**
+
+1. All app-level `before_request` functions run first.
+2. Then blueprint-level `before_request` functions for the matched blueprint run.
+3. The view function executes.
+4. Blueprint-level `after_request` functions for the matched blueprint run.
+5. Then all app-level `after_request` functions run last.
+
+`before_app_request` and `after_app_request` registered on blueprints behave like app-level hooks and run with app-level hooks.
+
+**Summary:**
+
+- `before_request`: app-level hooks run before blueprint-level hooks.
+- `after_request`: blueprint-level hooks run before app-level hooks.
+
+This ordering ensures that app-wide setup happens before blueprint-specific setup, and blueprint-specific teardown happens before app-wide teardown.
+
+---
+
+**Files referenced:**  
+- `src/flask/sansio/scaffold.py` (methods `before_request`, `after_request`)  
+- `src/flask/sansio/blueprints.py` (methods `before_app_request`, `after_app_request`)  
+- `docs/tutorial/views.rst` (explains `before_app_request` usage)  
+
+**Note:** The exact call order is not explicitly coded in the provided snippets but follows Flask's documented behavior.",730,"['src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/tutorial/views.rst', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/scaffold.py', 'tests/test_async.py', 'docs/blueprints.rst', 'src/flask/app.py', 'docs/tutorial/views.rst', 'src/flask/sansio/blueprints.py', 'tests/test_blueprints.py', 'tests/test_async.py', 'src/flask/sansio/blueprints.py', 'tests/test_blueprints.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'docs/reqcontext.rst', 'docs/blueprints.rst']",3.325,0.5652173913043478,0.0,0.8874999999778125,0.0,0.65,gpt-4o-mini,explain,"Flask.preprocess_request in src/flask/app.py runs url_value_preprocessors and then before_request functions for the app first, then blueprints (names = (None, *reversed(request.blueprints))); if a before_request function returns a value, handling stops and it is used as the response. process_response runs per-request after_this_request functions, then after_request functions for blueprints and then the app, each in reverse registration order, and finally saves the session.",['src/flask/app.py'],0.0,0.0,0.1,0.0,code,0.0,0.2,0.0,0.14285714285714285,headers,
+q30,How are blueprint routes prefixed and named when registered on the app?,"Blueprint routes are prefixed by the `url_prefix` argument passed to `app.register_blueprint()`, which prepends the prefix to all blueprint URLs (see `docs/blueprints.rst` lines 108-117 and `docs/tutorial/views.rst` lines 39-44).
+
+The blueprint's name (given in the `Blueprint` constructor) is used to prefix the endpoint names but does not modify the URL path itself (see `docs/blueprints.rst` lines 76-84).
+
+In `src/flask/sansio/app.py` (`App.register_blueprint`), the blueprint is registered with optional parameters like `url_prefix` and `name` (the latter can override the blueprint's registered name to allow multiple registrations with unique endpoint names).
+
+**Summary:**
+- URL paths are prefixed by the `url_prefix` argument on registration.
+- Endpoint names are prefixed by the blueprint's name (or overridden `name` option).
+- The blueprint name does not affect the URL path, only the endpoint naming.",689,"['docs/blueprints.rst', 'src/flask/sansio/app.py', 'docs/blueprints.rst', 'docs/tutorial/views.rst', 'src/flask/sansio/app.py', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'docs/blueprints.rst', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/app.py', 'docs/errorhandling.rst', 'docs/blueprints.rst', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst']",1.922,1.0,0.8378561945815163,0.4499999999775,0.0,0.11,gpt-4o-mini,explain,"BlueprintSetupState.add_url_rule in src/flask/sansio/blueprints.py joins the url_prefix with the rule, sets the subdomain default, merges url_defaults, and registers the rule on the app with the endpoint f""{name_prefix}.{blueprint_name}.{endpoint}"" (leading dots stripped), e.g. ""admin.index"".",['src/flask/sansio/blueprints.py'],0.0,0.0,0.16666666666666666,0.0,docs,1.0,0.6,0.0,0.3333333333333333,headers,
+q31,How do nested blueprints combine their url_prefix values?,"Nested blueprints combine their `url_prefix` values by concatenating the parent's `url_prefix` with the child's `url_prefix`. This means the child's URLs are prefixed with both the parent's and the child's prefixes.
+
+- Reference:  
+  - **File:** `docs/blueprints.rst` (lines 124-138)  
+    Example shows `parent = Blueprint('parent', __name__, url_prefix='/parent')` and `child = Blueprint('child', __name__, url_prefix='/child')` where `parent.register_blueprint(child)` results in child URLs being prefixed with `/parent/child`.  
+  - **File:** `tests/test_blueprints.py` (lines 931-947)  
+    The test `test_nesting_url_prefixes` demonstrates registering a child blueprint with a `url_prefix` on a parent blueprint, and then registering the parent on the app with another `url_prefix`, effectively nesting and combining prefixes.
+
+In summary:  
+**Nested blueprints concatenate their `url_prefix` values to form the final URL prefix.**",793,"['src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'docs/patterns/urlprocessors.rst', 'tests/test_blueprints.py', 'docs/blueprints.rst', 'docs/blueprints.rst', 'docs/tutorial/views.rst', 'docs/tutorial/blog.rst', 'CHANGES.rst', 'docs/blueprints.rst', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'src/flask/sansio/app.py', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'docs/patterns/urlprocessors.rst']",2.097,0.5454545454545454,0.9537003932692615,0.9166666666361111,1.0,0.43,gpt-4o-mini,explain,"In Blueprint.register (src/flask/sansio/blueprints.py), for each child blueprint, if both the parent state and child have a url_prefix they are joined as parent.rstrip('/') + '/' + child.lstrip('/'); otherwise whichever is set is used. Subdomains are combined similarly (child + '.' + parent) and name_prefix is set to the parent's name before registering the child.",['src/flask/sansio/blueprints.py'],1.0,1.0,1.0,1.0,code,0.0,0.8,1.0,1.0,headers,
+q32,How does MethodView pick which method to call?,"MethodView picks which method to call in the `dispatch_request` method (file: `src/flask/views.py`, lines ~179-188). It uses the current HTTP request method name (lowercased) to find a corresponding method on the instance:
+
+```python
+meth = getattr(self, request.method.lower(), None)
+```
+
+If the HTTP method is `HEAD` and no handler is found, it falls back to the `get` method:
+
+```python
+if meth is None and request.method == ""HEAD"":
+    meth = getattr(self, ""get"", None)
+```
+
+Then it calls the found method to handle the request.",690,"['src/flask/views.py', 'docs/views.rst', 'src/flask/views.py', 'docs/views.rst', 'src/flask/views.py', 'tests/test_views.py', 'tests/test_views.py', 'src/flask/views.py', 'docs/api.rst', 'tests/test_views.py', 'tests/test_views.py', 'tests/test_views.py', 'docs/views.rst', 'tests/test_helpers.py', 'docs/patterns/methodoverrides.rst', 'src/flask/views.py', 'docs/views.rst', 'src/flask/views.py', 'tests/test_views.py', 'tests/test_views.py']",1.495,0.7142857142857143,0.852600991354033,0.99999999998,0.5,0.59,gpt-4o-mini,explain,"MethodView.dispatch_request in src/flask/views.py looks up a method named after request.method.lower() (e.g. get, post). For HEAD requests without a head method it falls back to get. It asserts the method exists and calls it via current_app.ensure_sync. The allowed methods are collected from the defined handlers in __init_subclass__.",['src/flask/views.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,headers,
+q33,Does View.as_view create a new view instance per request?,"The answer is: **By default, `View.as_view` creates a new instance of the view class for every request.**
+
+- From **src/flask/views.py**, lines 92-99 (`View.as_view` docstring):  
+  ""By default, the generated view will create a new instance of the view class for every request and call its `dispatch_request` method.""
+
+- This behavior can be changed by setting the class attribute `init_every_request = False` (see **src/flask/views.py**, lines 16-28, `View` class docstring).
+
+- The **docs/views.rst** (lines 126-131) confirm this default behavior:  
+  ""By default, a new instance of the view class is created every time a request is handled.""
+
+So unless `init_every_request` is explicitly set to `False`, `View.as_view` creates a new instance per request.",549,"['src/flask/views.py', 'docs/views.rst', 'src/flask/views.py', 'docs/views.rst', 'docs/views.rst', 'docs/views.rst', 'src/flask/views.py', 'docs/views.rst', 'docs/views.rst', 'src/flask/views.py', 'docs/async-await.rst', 'docs/tutorial/views.rst', 'docs/views.rst', 'docs/views.rst', 'src/flask/views.py', 'docs/views.rst', 'docs/extensiondev.rst', 'src/flask/views.py', 'docs/views.rst', 'docs/views.rst']",1.778,1.0,0.8150834708133571,0.99999999998,0.6666666666666666,0.8,gpt-4o-mini,explain,"Yes by default: in View.as_view (src/flask/views.py), when init_every_request is True (the default) a new instance of the class is created for every request. If a subclass sets init_every_request = False, one instance is created up front and reused for all requests. Class decorators are applied to the generated view function.",['src/flask/views.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,headers,
+q34,How does Flask support async view functions?,"Flask supports async view functions by running the coroutine on a separate thread with its own event loop, rather than using an async event loop on the main thread. This approach maintains backward compatibility with existing synchronous extensions but introduces some performance overhead due to threading.
+
+This is explained in:
+- **docs/design.rst**, lines 188-196: Flask executes async coroutines on a separate thread instead of using an async-first event loop.
+- **docs/async-await.rst**, lines 34-39: Flask starts an event loop in a thread to run the async view function and then returns the result.",661,"['docs/async-await.rst', 'docs/design.rst', 'docs/async-await.rst', 'docs/async-await.rst', 'docs/async-await.rst', 'src/flask/app.py', 'docs/async-await.rst', 'docs/async-await.rst', 'docs/tutorial/views.rst', 'docs/async-await.rst', 'docs/async-await.rst', 'src/flask/app.py', 'docs/views.rst', 'docs/async-await.rst', 'src/flask/app.py', 'src/flask/app.py', 'docs/reqcontext.rst', 'CHANGES.rst', 'docs/design.rst', 'docs/async-await.rst']",1.556,0.8333333333333334,0.9469389114569481,0.0,0.0,0.0,gpt-4o-mini,explain,"Flask.ensure_sync in src/flask/app.py returns plain functions unchanged and wraps coroutine functions with async_to_sync, which uses asgiref.sync.async_to_sync. If asgiref is not installed it raises RuntimeError telling you to install Flask with the 'async' extra.",['src/flask/app.py'],0.0,0.0,0.16666666666666666,0.0,docs,1.0,1.0,1.0,1.0,headers,
+q35,Which extra types does Flask's default JSON provider serialize?,"The provided code snippets do not explicitly list the extra types that Flask's `DefaultJSONProvider` serializes beyond the standard JSON types.
+
+However, from the comment in `src/flask/json/provider.py` at line 124 in the `DefaultJSONProvider` class:
+
+```python
+""""""Provide JSON operations using Python's built-in :mod:`json`
+library. Serializes the following additional data types:
+```
+
+This indicates that the class serializes additional types, but the specific types are not shown in the snippets.
+
+**Answer:**  
+The code snippets do not contain the specific extra types that Flask's `DefaultJSONProvider` serializes. You would need to look further in `src/flask/json/provider.py` (likely below line 126) where the serialization logic or `_default` function is defined to see which extra types are supported.",717,"['src/flask/json/provider.py', 'src/flask/sansio/app.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/sansio/app.py', 'docs/api.rst', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/__init__.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/sansio/app.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/__init__.py']",1.558,1.0,0.0,0.7499999999625,0.0,0.29,gpt-4o-mini,explain,"DefaultJSONProvider in src/flask/json/provider.py uses the _default function: date/datetime become HTTP date (RFC 822) strings, decimal.Decimal and uuid.UUID become strings, dataclasses go through dataclasses.asdict, and objects with __html__ use that method. It also defaults to ensure_ascii=True and sort_keys=True.",['src/flask/json/provider.py'],1.0,1.0,1.0,1.0,code,0.0,0.0,1.0,1.0,headers,
+q36,How does flash() store messages?,"The `flash()` function stores messages by adding them to the session for the next request. Although the exact storage code is not shown in the snippet, the docstring in **`src/flask/helpers.py`** (lines 311-327) explains that flashed messages are saved in the session and later retrieved by `get_flashed_messages()`.
+
+Specifically:
+- `flash(message, category)` saves the `(category, message)` pair in the session.
+- The default category is `""message""` if none is provided.
+- These messages persist until `get_flashed_messages()` is called, which removes them from the session.
+
+So, **`flash()` stores messages by appending them as `(category, message)` pairs into the session's flash storage for retrieval in the next request.**",603,"['docs/quickstart.rst', 'src/flask/helpers.py', 'docs/patterns/flashing.rst', 'src/flask/helpers.py', 'src/flask/helpers.py', 'docs/api.rst', 'src/flask/helpers.py', 'docs/patterns/flashing.rst', 'docs/patterns/flashing.rst', 'docs/quickstart.rst', 'docs/tutorial/templates.rst', 'docs/templating.rst', 'src/flask/helpers.py', 'docs/patterns/flashing.rst', 'src/flask/helpers.py', 'src/flask/helpers.py', 'docs/api.rst', 'docs/patterns/flashing.rst', 'docs/patterns/flashing.rst', 'tests/test_signals.py']",1.551,1.0,0.6970332325622874,0.6791666666496875,0.3333333333333333,0.5,gpt-4o-mini,explain,"flash in src/flask/helpers.py gets the session's ""_flashes"" list, appends a (category, message) tuple (category defaults to ""message""), reassigns session[""_flashes""] so external session stores notice the change, and sends the message_flashed signal.",['src/flask/helpers.py'],0.0,1.0,0.5,1.0,docs,1.0,0.4,1.0,1.0,headers,
+q37,Which template file extensions get autoescaping by default?,"Autoescaping is enabled by default for templates with the following file extensions:
+
+- `.html`
+- `.htm`
+- `.xml`
+- `.xhtml`
+- `.svg` (added in version 2.2)
+
+This is specified in:
+
+- **docs/quickstart.rst** (lines 439-451)
+- **docs/templating.rst** (lines 20-27)
+- **src/flask/sansio/app.py**, function `App.select_jinja_autoescape` (lines 532-541)",696,"['docs/quickstart.rst', 'docs/templating.rst', 'src/flask/sansio/app.py', 'docs/templating.rst', 'docs/templating.rst', 'docs/templating.rst', 'CHANGES.rst', 'docs/design.rst', 'tests/templates/escaping_template.html', 'docs/patterns/templateinheritance.rst', 'src/flask/sansio/app.py', 'tests/templates/non_escaping_template.txt', 'docs/design.rst', 'docs/patterns/flashing.rst', 'docs/api.rst', 'CHANGES.rst', 'src/flask/templating.py', 'docs/patterns/appfactories.rst', 'docs/config.rst', 'docs/config.rst']",1.694,0.4444444444444444,0.9146866233724248,0.99999999995,1.0,0.67,gpt-4o-mini,explain,"App.select_jinja_autoescape in src/flask/sansio/app.py returns True for templates ending in .html, .htm, .xml, .xhtml or .svg, and True when no filename is given (e.g. render_template_string).",['src/flask/sansio/app.py'],0.0,1.0,0.3333333333333333,1.0,docs,1.0,0.8,1.0,1.0,headers,
+q38,"How does Flask find templates across the app and blueprints, and how can I debug template loading?","Flask finds templates by searching through the template loaders associated with the app and its blueprints. When you call `render_template()`, Flask tries to locate the template by checking these loaders in order.
+
+To debug template loading, you can enable the `EXPLAIN_TEMPLATE_LOADING` config variable in your Flask app. This causes Flask to log detailed information about each step it takes to find the template on every `render_template` call.
+
+Specifically, the function `explain_template_loading_attempts` in **`src/flask/debughelpers.py`** gathers and logs these steps, showing which loaders were checked, whether the template was found, and if the blueprint context might have caused issues. This helps identify why a template was not found or loaded incorrectly.
+
+Summary:
+- Flask searches templates via loaders from app and blueprints.
+- Enable `EXPLAIN_TEMPLATE_LOADING` config to get detailed logs.
+- Logs are generated by `explain_template_loading_attempts` in `src/flask/debughelpers.py`.
+- Logs include info about blueprint context and template lookup paths.
+
+This is also documented in **`docs/blueprints.rst`** around line 259, explaining how enabling `EXPLAIN_TEMPLATE_LOADING` helps debug template loading problems.",716,"['src/flask/debughelpers.py', 'docs/blueprints.rst', 'src/flask/debughelpers.py', 'docs/patterns/appfactories.rst', 'docs/quickstart.rst', 'tests/test_apps/blueprintapp/apps/frontend/__init__.py', 'docs/lifecycle.rst', 'tests/test_blueprints.py', 'docs/blueprints.rst', 'tests/test_templating.py', 'tests/test_blueprints.py', 'CHANGES.rst', 'src/flask/debughelpers.py', 'tests/test_blueprints.py', 'tests/test_blueprints.py', 'tests/test_apps/blueprintapp/apps/admin/__init__.py', 'tests/test_blueprints.py', 'src/flask/debughelpers.py', 'docs/tutorial/templates.rst', 'docs/blueprints.rst']",2.387,0.8461538461538461,0.9031434075026965,0.94999999997625,0.0,0.7,gpt-4o-mini,explain,"DispatchingJinjaLoader in src/flask/templating.py iterates the app's loader and each blueprint's loader and returns the first source found, raising TemplateNotFound otherwise. If EXPLAIN_TEMPLATE_LOADING is enabled it tries every loader and calls explain_template_loading_attempts from src/flask/debughelpers.py to log each attempt.","['src/flask/templating.py', 'src/flask/debughelpers.py']",1.0,1.0,1.0,0.5,code,0.0,0.6,1.0,1.0,headers,
+q39,How can a test modify the session before making a request?,"To modify the session before making a request in a test, use the `FlaskClient.session_transaction()` method (defined in `src/flask/testing.py` around line 148). This method opens a temporary test request context allowing direct session manipulation.
+
+Example usage pattern (implied from `CHANGES.rst` and `FlaskClient.session_transaction` doc):
+
+```python
+with client.session_transaction() as sess:
+    sess[""key""] = ""value""
+response = client.get(""/"")
+```
+
+This lets you set session variables before the actual request is made.",617,"['tests/test_basic.py', 'tests/test_session_interface.py', 'CHANGES.rst', 'src/flask/testing.py', 'tests/test_basic.py', 'tests/test_basic.py', 'docs/api.rst', 'docs/testing.rst', 'tests/test_basic.py', 'tests/test_basic.py', 'docs/testing.rst', 'tests/test_basic.py', 'examples/tutorial/tests/test_auth.py', 'docs/tutorial/tests.rst', 'tests/test_reqctx.py', 'docs/tutorial/views.rst', 'tests/test_testing.py', 'tests/test_basic.py', 'tests/test_reqctx.py', 'tests/test_basic.py']",1.325,0.6666666666666666,0.8688133859952343,0.4777777777618519,0.6666666666666666,0.18,gpt-4o-mini,explain,"FlaskClient.session_transaction in src/flask/testing.py is a context manager: it creates a test request context, opens the session with the app's session_interface and yields it. After the block it saves the session to a response and copies the Set-Cookie headers into the client's cookies, so the next request sees the changes. It raises RuntimeError if the session backend did not open a session.",['src/flask/testing.py'],0.0,1.0,0.25,1.0,tests,1.0,0.8,1.0,1.0,headers,
+q40,How does Flask limit the size of incoming request bodies?,"Flask limits the size of incoming request bodies primarily using the `max_content_length` property in **`src/flask/wrappers.py`** (lines 59-65 in the `Request` class). This sets the maximum number of bytes read during a request, raising a 413 `RequestEntityTooLarge` error if exceeded. 
+
+Additionally, for multipart form data, Flask uses the `max_form_memory_size` property (lines 92-108 in the same file), which limits the size of any non-file form field in a multipart request. This defaults to the `MAX_FORM_MEMORY_SIZE` config (default 500,000 bytes) and can be set to `None` to disable the limit.
+
+In configuration (see **`docs/patterns/fileuploads.rst`**), setting `app.config['MAX_CONTENT_LENGTH']` (e.g., 16 MB) enforces the maximum payload size globally.
+
+**Summary:**
+- `max_content_length` limits total request body size.
+- `max_form_memory_size` limits size of individual non-file form fields in multipart data.
+- Both raise a 413 error if limits are exceeded.
+- Configurable via `MAX_CONTENT_LENGTH` and `MAX_FORM_MEMORY_SIZE` in Flask config.",665,"['src/flask/wrappers.py', 'docs/patterns/fileuploads.rst', 'src/flask/wrappers.py', 'src/flask/wrappers.py', 'docs/config.rst', 'src/flask/wrappers.py', 'docs/patterns/fileuploads.rst', 'src/flask/wrappers.py', 'docs/config.rst', 'src/flask/wrappers.py', 'src/flask/wrappers.py', 'docs/web-security.rst', 'tests/test_request.py', 'src/flask/wrappers.py', 'docs/config.rst', 'src/flask/wrappers.py', 'docs/config.rst', 'src/flask/wrappers.py', 'docs/reqcontext.rst', 'docs/config.rst']",1.952,1.0,0.9440538234662351,0.99999999998,0.6666666666666666,0.75,gpt-4o-mini,explain,"Request.max_content_length in src/flask/wrappers.py returns a per-request override if set, otherwise current_app.config[""MAX_CONTENT_LENGTH""] (default None, meaning no app-level limit). Exceeding it raises 413 RequestEntityTooLarge. Related limits are MAX_FORM_MEMORY_SIZE (500000) and MAX_FORM_PARTS (1000).",['src/flask/wrappers.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,headers,
+u01,How does Flask's built-in ORM define database models?,"Flask itself does not have a built-in ORM; instead, it commonly uses the **Flask-SQLAlchemy** extension to define database models.
+
+- According to **docs/patterns/sqlalchemy.rst** (lines 2-26), the recommended way is to use the **Flask-SQLAlchemy** extension, which provides a `db.Model` base class.
+- Models subclass `db.Model` provided by Flask-SQLAlchemy (see **docs/extensiondev.rst**, lines 200-209).
+- The typical pattern is to create a `SQLAlchemy()` instance (e.g., `db = SQLAlchemy()`) in your model module, then initialize it with the app in your factory function (see **docs/patterns/appfactories.rst**, lines 70-81).
+
+**Summary:**  
+Flask models are defined by subclassing `db.Model` from the Flask-SQLAlchemy extension, where `db` is an instance of `SQLAlchemy()` initialized with the Flask app.",691,"['docs/patterns/sqlalchemy.rst', 'docs/extensiondev.rst', 'docs/patterns/sqlalchemy.rst', 'docs/patterns/sqlalchemy.rst', 'docs/patterns/appfactories.rst', 'docs/patterns/sqlalchemy.rst', 'docs/design.rst', 'docs/views.rst', 'docs/patterns/sqlalchemy.rst', 'docs/patterns/sqlalchemy.rst', 'docs/design.rst', 'docs/design.rst', 'docs/tutorial/database.rst', 'docs/tutorial/database.rst', 'docs/tutorial/database.rst', 'docs/patterns/appfactories.rst', 'docs/patterns/sqlalchemy.rst', 'docs/patterns/sqlalchemy.rst', 'docs/design.rst', 'docs/tutorial/database.rst']",1.941,,,,,,,unanswerable,Flask does not include an ORM or database layer; the codebase contains no model definitions. Database support comes from extensions such as Flask-SQLAlchemy.,[],,,,,,,,,,headers,1.0
+u02,Where is the WebSocket handler implemented in Flask?,The provided code snippets do not contain information about where the WebSocket handler is implemented in Flask.,747,"['docs/logging.rst', 'docs/quickstart.rst', 'CHANGES.rst', 'docs/quickstart.rst', 'docs/async-await.rst', 'docs/design.rst', 'docs/quickstart.rst', 'docs/signals.rst', 'docs/lifecycle.rst', 'src/flask/app.py', 'docs/reqcontext.rst', 'src/flask/sansio/app.py', 'docs/reqcontext.rst', 'docs/quickstart.rst', 'docs/patterns/appdispatch.rst', 'docs/tutorial/factory.rst', 'src/flask/logging.py', 'docs/signals.rst', 'docs/signals.rst', 'CHANGES.rst']",0.895,,,,,,,unanswerable,Flask's codebase has no WebSocket handler; Flask is a WSGI framework and does not implement WebSockets.,[],,,,,,,,,,headers,1.0
+u03,How does Flask's built-in rate limiter throttle requests per IP?,"The provided code snippets and documentation do not contain any information about Flask's built-in rate limiter or how it throttles requests per IP. Flask itself does not include a built-in rate limiter; such functionality is typically implemented via extensions like `Flask-Limiter` or external middleware.
+
+**Summary:**  
+- No mention of rate limiting or throttling per IP in the given files or functions.  
+- Flask does not have a built-in rate limiter; use extensions like `Flask-Limiter` for that feature.",624,"['docs/web-security.rst', 'docs/patterns/fileuploads.rst', 'docs/lifecycle.rst', 'src/flask/wrappers.py', 'docs/patterns/fileuploads.rst', 'docs/web-security.rst', 'src/flask/wrappers.py', 'docs/reqcontext.rst', 'docs/deploying/proxy_fix.rst', 'docs/quickstart.rst', 'docs/logging.rst', 'docs/patterns/methodoverrides.rst', 'docs/reqcontext.rst', 'docs/quickstart.rst', 'src/flask/wrappers.py', 'docs/signals.rst', 'docs/quickstart.rst', 'docs/config.rst', 'docs/web-security.rst', 'docs/reqcontext.rst']",1.38,,,,,,,unanswerable,"Flask has no built-in rate limiter; rate limiting is provided by extensions such as Flask-Limiter, not by this codebase.",[],,,,,,,,,,headers,1.0
+u04,What does Flask's GraphQL schema module export?,The provided code snippets and documentation do not contain any information about Flask's GraphQL schema module or what it exports.,792,"['docs/appcontext.rst', 'docs/patterns/appfactories.rst', 'docs/patterns/appfactories.rst', 'docs/api.rst', 'docs/patterns/sqlalchemy.rst', 'src/flask/cli.py', 'src/flask/ctx.py', 'src/flask/app.py', 'docs/patterns/appfactories.rst', 'src/flask/testing.py', 'docs/design.rst', 'tests/test_helpers.py', 'docs/tutorial/blog.rst', 'src/flask/sansio/app.py', 'CHANGES.rst', 'docs/extensiondev.rst', 'docs/blueprints.rst', 'docs/patterns/appfactories.rst', 'docs/patterns/sqlite3.rst', 'examples/tutorial/flaskr/blog.py']",0.897,,,,,,,unanswerable,There is no GraphQL module in Flask; the codebase does not contain GraphQL support.,[],,,,,,,,,,headers,1.0
+q01,Where is the @app.route decorator defined?,"The `@app.route` decorator is defined in the method `route` of the `Scaffold` class, located in the file **src/flask/sansio/scaffold.py**, lines 335-365.",1214,"['tests/test_basic.py', 'src/flask/sansio/scaffold.py', 'tests/test_blueprints.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/blueprints.py', 'docs/patterns/viewdecorators.rst', 'docs/patterns/viewdecorators.rst', 'tests/test_basic.py', 'tests/test_blueprints.py', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/patterns/viewdecorators.rst', 'src/flask/cli.py', 'examples/tutorial/flaskr/__init__.py', 'tests/test_blueprints.py', 'src/flask/sansio/scaffold.py', 'docs/blueprints.rst', 'docs/patterns/lazyloading.rst', 'src/flask/cli.py', 'docs/lifecycle.rst']",1.251,1.0,0.9457560018963849,0.49999999995,1.0,0.29,gpt-4o-mini,locate,"The route decorator is defined as Scaffold.route in src/flask/sansio/scaffold.py. It pops the optional endpoint from the options and calls self.add_url_rule(rule, endpoint, f, **options), then returns the original function.",['src/flask/sansio/scaffold.py'],0.0,1.0,0.5,1.0,tests,1.0,0.4,1.0,1.0,small_to_big,
+q02,How does Flask decide which HTTP methods a route accepts when none are given?,"Flask decides the accepted HTTP methods for a route in the function `App.add_url_rule` (file: `src/flask/sansio/app.py`, lines 604-661) as follows:
+
+- If no `methods` argument is provided in `add_url_rule`, Flask tries to get the `methods` attribute from the `view_func` (the view function).
+- If the `view_func` has no `methods` attribute, Flask defaults to `(""GET"",)`.
+- If `methods` is a string instead of a list/set, Flask raises a `TypeError`.
+- Flask converts all methods to uppercase and adds any `required_methods` defined on the `view_func`.
+- If `OPTIONS` is not in the methods and automatic options are enabled (`PROVIDE_AUTOMATIC_OPTIONS` config), Flask adds `OPTIONS` and enables automatic options handling.
+- Finally, the combined set of methods is used to create the URL rule.
+
+In short:  
+**If no methods are given, Flask uses `view_func.methods` if available; otherwise defaults to `GET`. It also adds `required_methods` and may add `OPTIONS` automatically.**",1106,"['docs/quickstart.rst', 'src/flask/sansio/app.py', 'docs/quickstart.rst', 'docs/patterns/methodoverrides.rst', 'docs/api.rst', 'src/flask/app.py', 'docs/api.rst', 'src/flask/app.py', 'docs/errorhandling.rst', 'src/flask/wrappers.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/app.py', 'src/flask/cli.py', 'docs/api.rst', 'src/flask/sansio/app.py', 'src/flask/sansio/app.py', 'docs/errorhandling.rst', 'docs/patterns/methodoverrides.rst', 'docs/errorhandling.rst']",2.377,1.0,0.8866890326829081,0.94999999997625,1.0,0.78,gpt-4o-mini,explain,"In App.add_url_rule (src/flask/sansio/app.py), if methods is None it uses the view function's `methods` attribute, falling back to (""GET"",). Methods are uppercased, any `required_methods` from the view are added, and OPTIONS is added automatically when PROVIDE_AUTOMATIC_OPTIONS is enabled and OPTIONS was not explicitly given. Werkzeug adds HEAD automatically when GET is present.",['src/flask/sansio/app.py'],0.0,1.0,0.5,1.0,docs,1.0,0.8,1.0,1.0,small_to_big,
+q03,What happens if two different view functions are registered with the same endpoint name?,"If two different view functions are registered with the same endpoint name, the latter registration will overwrite the previous one in the `view_functions` mapping.
+
+Specifically, in **`src/flask/sansio/scaffold.py`**, inside the **`Scaffold.endpoint`** decorator (lines 435-457), the line:
+
+```python
+self.view_functions[endpoint] = f
+```
+
+assigns the view function `f` to the given `endpoint` key. Since `view_functions` is a dictionary, registering a second view function with the same endpoint name replaces the first one.
+
+Thus, only the last registered view function for that endpoint will be called when the endpoint is used.",810,"['src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'docs/tutorial/views.rst', 'docs/api.rst', 'src/flask/sansio/scaffold.py', 'docs/blueprints.rst', 'docs/api.rst', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/app.py', 'docs/patterns/viewdecorators.rst', 'docs/views.rst', 'src/flask/sansio/blueprints.py', 'docs/tutorial/views.rst', 'docs/views.rst', 'src/flask/sansio/scaffold.py', 'tests/test_views.py', 'docs/patterns/lazyloading.rst', 'docs/views.rst', 'src/flask/views.py', 'docs/views.rst']",1.424,0.8,0.9097794046556033,0.99999999995,0.0,0.0,gpt-4o-mini,explain,"App.add_url_rule in src/flask/sansio/app.py checks self.view_functions for the endpoint; if a different function is already mapped it raises AssertionError(""View function mapping is overwriting an existing endpoint function: <endpoint>"").",['src/flask/sansio/app.py'],0.0,0.0,0.1111111111111111,0.0,code,0.0,0.4,0.0,0.2,small_to_big,
+q04,"What error is raised if methods is passed as a string like methods=""POST""?","The error raised is a **TypeError** with the message:
+
+```
+Allowed methods must be a list of strings, for example: @app.route(..., methods=[""POST""])
+```
+
+This happens in the function `App.add_url_rule` in the file `src/flask/sansio/app.py` (lines 604-661), specifically at this check:
+
+```python
+if isinstance(methods, str):
+    raise TypeError(
+        ""Allowed methods must be a list of strings, for""
+        ' example: @app.route(..., methods=[""POST""])'
+    )
+```
+
+This behavior is also tested in `tests/test_basic.py` in the function `test_disallow_string_for_allowed_methods`.",1049,"['tests/test_basic.py', 'src/flask/sansio/app.py', 'docs/errorhandling.rst', 'docs/views.rst', 'docs/errorhandling.rst', 'docs/extensiondev.rst', 'docs/tutorial/blog.rst', 'docs/errorhandling.rst', 'docs/testing.rst', 'src/flask/views.py', 'docs/errorhandling.rst', 'docs/blueprints.rst', 'docs/patterns/methodoverrides.rst', 'src/flask/sansio/scaffold.py', 'tests/test_helpers.py', 'src/flask/debughelpers.py', 'src/flask/views.py', 'tests/test_basic.py', 'docs/views.rst', 'docs/errorhandling.rst']",1.647,1.0,0.6800517369368878,0.9166666666361111,1.0,0.67,gpt-4o-mini,explain,"App.add_url_rule in src/flask/sansio/app.py raises a TypeError saying allowed methods must be a list of strings, for example @app.route(..., methods=[""POST""]).",['src/flask/sansio/app.py'],0.0,1.0,0.5,1.0,tests,1.0,0.8,1.0,1.0,small_to_big,
+q05,Walk through what happens when a request reaches a Flask app via WSGI.,"When a request reaches a Flask app via WSGI, the following happens (from **docs/lifecycle.rst**, lines 72-125):
+
+1. The browser/client makes an HTTP request.
+2. The WSGI server receives the request.
+3. The WSGI server converts the HTTP request data into a WSGI `environ` dictionary.
+4. The WSGI server calls the Flask application object (the WSGI application) with the `environ`.
+5. Flask's `Flask.wsgi_app` method is called to handle the request.
+6. Inside `wsgi_app`:
+   - A `RequestContext` object is created, converting the `environ` into a `Request` object.
+   - An `AppContext` object is also created.
+   - The application context is pushed, making `current_app` and `g` available.
+   - The `appcontext_pushed` signal is sent.
+   - The request context is pushed, making `request` and other request-bound proxies available.
+7. Flask matches the URL to a view function.
+8. The view function is called, and its return value is processed.
+9. Flask translates the view function's return value into a WSGI response.
+10. The WSGI server sends the HTTP response back to the client.
+
+This flow ensures proper context management and request handling within Flask.",688,"['docs/reqcontext.rst', 'docs/lifecycle.rst', 'docs/lifecycle.rst', 'docs/lifecycle.rst', 'docs/lifecycle.rst', 'docs/reqcontext.rst', 'docs/quickstart.rst', 'docs/reqcontext.rst', 'docs/deploying/index.rst', 'docs/appcontext.rst', 'docs/appcontext.rst', 'src/flask/ctx.py', 'src/flask/sansio/app.py', 'docs/patterns/appdispatch.rst', 'docs/lifecycle.rst', 'docs/lifecycle.rst', 'docs/quickstart.rst', 'src/flask/app.py', 'docs/reqcontext.rst', 'docs/lifecycle.rst']",2.218,1.0,0.8915263032369414,0.99999999998,0.0,0.48,gpt-4o-mini,multi_file,"Flask.__call__ calls wsgi_app (src/flask/app.py). wsgi_app creates a RequestContext and pushes it (which pushes an app context, opens the session and matches the URL in src/flask/ctx.py), then calls full_dispatch_request. That sends request_started, runs preprocess_request (url_value_preprocessors and before_request functions), then dispatch_request calls the view function for the matched endpoint. The result goes through finalize_request -> make_response -> process_response (after_request functions and session saving). Unhandled exceptions go to handle_exception. Finally the context is popped, running teardown functions.","['src/flask/app.py', 'src/flask/ctx.py']",0.0,0.0,0.0,0.0,docs,1.0,1.0,1.0,1.0,small_to_big,
+q06,How does dispatch_request handle an automatic OPTIONS request?,"In **src/flask/app.py**, function **Flask.dispatch_request** (lines 879-902):
+
+- It checks if the matched URL rule has `provide_automatic_options` set to `True` and if the request method is `""OPTIONS""`.
+- If both conditions are met, it returns the default automatic OPTIONS response by calling `self.make_default_options_response()`.
+- Otherwise, it dispatches the request to the view function for the endpoint.
+
+So, **automatic OPTIONS requests are handled by returning a default OPTIONS response if the URL rule opts in via `provide_automatic_options=True`.** If not, the request is passed to the view function.
+
+This behavior is also confirmed by the tests in **tests/test_views.py** where setting `provide_automatic_options = False` disables automatic OPTIONS handling, causing a 405 response instead.",2242,"['src/flask/app.py', 'src/flask/app.py', 'docs/api.rst', 'src/flask/views.py', 'tests/test_views.py', 'CHANGES.rst', 'docs/config.rst', 'docs/api.rst', 'src/flask/app.py', 'docs/reqcontext.rst', 'tests/test_views.py', 'docs/views.rst', 'src/flask/app.py', 'docs/api.rst', 'tests/test_views.py', 'docs/reqcontext.rst', 'src/flask/views.py', 'docs/api.rst', 'src/flask/views.py', 'src/flask/ctx.py']",1.788,1.0,0.901327354715334,0.99999999998,1.0,0.5,gpt-4o-mini,explain,"In Flask.dispatch_request (src/flask/app.py), if the matched rule has provide_automatic_options set and the request method is OPTIONS, it returns self.make_default_options_response() instead of calling the view function.",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,small_to_big,
+q07,What return types can a view function return and how are they converted to a response?,"The return types a view function can return and their conversion to a response are defined in **`Flask.make_response`** method in **`src/flask/app.py`** (lines 1129-1269):
+
+- **`str`**: Converted to a response object with the string encoded as UTF-8 body, status code `200 OK`, and mimetype `text/html`.
+- **`bytes` or `bytearray`**: Converted to a response object with the bytes as the body.
+- **`dict` or `list`**: Passed to `jsonify` to produce a JSON response.
+- **`generator` or `iterator`**: Converted to a streaming response.
+- **`tuple`**: Interpreted as `(body, status, headers)`, `(body, status)`, or `(body, headers)` where `body` is any allowed type, `status` is a string or int, and `headers` is a dict or list of tuples.
+- **`Response` instance (or subclass of Werkzeug's Response)**: Returned unchanged or coerced to Flask's response class.
+- **`callable` (WSGI application)**: Called with the WSGI environment to produce a response.
+
+If the return value is `None` or an invalid type, a `TypeError` is raised.
+
+Summary from **`docs/quickstart.rst`** (lines 683-691) confirms this behavior:  
+- String → HTML response  
+- Dict/List → JSON response via `jsonify`
+
+This logic ensures flexible return types from view functions are automatically converted into proper HTTP responses by Flask.",3005,"['docs/quickstart.rst', 'src/flask/app.py', 'src/flask/app.py', 'docs/tutorial/views.rst', 'src/flask/app.py', 'docs/quickstart.rst', 'src/flask/views.py', 'docs/quickstart.rst', 'docs/lifecycle.rst', 'src/flask/helpers.py', 'src/flask/helpers.py', 'src/flask/app.py', 'docs/reqcontext.rst', 'docs/tutorial/views.rst', 'src/flask/app.py', 'src/flask/app.py', 'src/flask/helpers.py', 'CHANGES.rst', 'docs/reqcontext.rst', 'docs/views.rst']",2.868,1.0,0.8657125039704622,0.9166666666361111,1.0,0.61,gpt-4o-mini,explain,"Flask.make_response in src/flask/app.py accepts str or bytes (body of a response_class), dict or list (converted with self.json.response, i.e. JSON), a generator/iterator (streamed response), a tuple of (body, status, headers), (body, status) or (body, headers), a response_class instance (returned as-is), another Werkzeug Response or a WSGI callable (coerced with response_class.force_type). Returning None raises a TypeError.",['src/flask/app.py'],0.0,1.0,0.5,1.0,docs,1.0,0.4,1.0,1.0,small_to_big,
+q08,What error does Flask raise if a view function returns None?,"Flask raises a `TypeError` if a view function returns `None`.
+
+Specifically, in **`src/flask/app.py`**, inside the **`Flask.make_response`** function (lines 1129-1269), there is this check:
+
+```python
+if rv is None:
+    raise TypeError(
+        f""The view function for {request.endpoint!r} did not""
+        "" return a valid response. The function either returned""
+        "" None or ended without a return statement.""
+    )
+```
+
+So the error message clearly states that returning `None` or not returning anything is not allowed and results in a `TypeError`.",3481,"['src/flask/app.py', 'src/flask/app.py', 'src/flask/views.py', 'src/flask/app.py', 'src/flask/wrappers.py', 'src/flask/app.py', 'src/flask/views.py', 'src/flask/sansio/scaffold.py', 'docs/tutorial/views.rst', 'CHANGES.rst', 'tests/test_views.py', 'src/flask/app.py', 'src/flask/views.py', 'src/flask/sansio/app.py', 'src/flask/views.py', 'src/flask/views.py', 'docs/reqcontext.rst', 'src/flask/sansio/app.py', 'src/flask/app.py', 'src/flask/app.py']",1.253,1.0,0.9148083048667809,0.9166666666361111,1.0,0.67,gpt-4o-mini,explain,"Flask.make_response in src/flask/app.py raises a TypeError: ""The view function for <endpoint> did not return a valid response. The function either returned None or ended without a return statement.""",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.0,1.0,1.0,small_to_big,
+q09,In what order does Flask look up a registered error handler for an exception?,"Flask looks up a registered error handler for an exception in this order (from **src/flask/sansio/app.py**, function **App._find_error_handler**):
+
+1. Blueprint handler for the specific HTTP status code (if any).
+2. App handler for the specific HTTP status code.
+3. Blueprint handler for the exception class or its base classes (following the class hierarchy).
+4. App handler for the exception class or its base classes.
+5. Returns `None` if no suitable handler is found.
+
+This means Flask first tries to find a handler by code within blueprints, then app-wide by code, then by exception class within blueprints, then app-wide by exception class.",1166,"['docs/errorhandling.rst', 'docs/errorhandling.rst', 'src/flask/sansio/app.py', 'src/flask/app.py', 'src/flask/app.py', 'docs/errorhandling.rst', 'docs/reqcontext.rst', 'src/flask/app.py', 'docs/errorhandling.rst', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/app.py', 'src/flask/app.py', 'docs/errorhandling.rst', 'src/flask/sansio/app.py', 'src/flask/app.py', 'src/flask/app.py', 'src/flask/sansio/app.py', 'src/flask/app.py']",1.683,1.0,0.8836696051596182,0.8055555555287036,1.0,0.95,gpt-4o-mini,explain,"App._find_error_handler in src/flask/sansio/app.py searches: blueprint handler for the specific status code, app handler for the code, then blueprint handler for the exception class, then app handler for the class, walking the exception class MRO in each map. It returns None if nothing matches.",['src/flask/sansio/app.py'],0.0,1.0,0.3333333333333333,1.0,docs,1.0,0.4,1.0,1.0,small_to_big,
+q10,What does Flask do with an unhandled exception in production versus debug mode?,"In **`src/flask/app.py`**, the behavior is defined mainly in the **`Flask.handle_exception`** method (lines 811-862):
+
+- **In production mode** (when `PROPAGATE_EXCEPTIONS` is `False`):
+  - Flask logs the original exception.
+  - Returns a generic 500 Internal Server Error response.
+  - If a handler for `InternalServerError` or `500` is registered, it is used.
+  - The original exception is attached as `original_exception` on the `InternalServerError`.
+  - Sends the `got_request_exception` signal.
+  - Runs `after_request` functions even for the default 500 response.
+
+- **In debug mode** (when `PROPAGATE_EXCEPTIONS` is `True`):
+  - Flask re-raises the original exception to allow the debugger to display it.
+
+This means:
+
+- **Production:** User sees a generic error page; exception is logged.
+- **Debug:** Exception is re-raised and shown with the interactive debugger.
+
+This is also summarized in the **`docs/errorhandling.rst`** snippet: in production, Flask shows a simple error page and logs the exception; in debug mode, the interactive debugger is enabled.
+
+Additionally, from **`Flask.run`** (lines 546-667), when `debug=True`, Flask enables the debugger and automatic reloading by default, affecting how exceptions are handled during development.",2439,"['src/flask/app.py', 'docs/errorhandling.rst', 'src/flask/app.py', 'src/flask/app.py', 'docs/debugging.rst', 'src/flask/app.py', 'src/flask/app.py', 'src/flask/sansio/app.py', 'src/flask/app.py', 'src/flask/app.py', 'docs/errorhandling.rst', 'CHANGES.rst', 'docs/reqcontext.rst', 'docs/debugging.rst', 'docs/debugging.rst', 'src/flask/app.py', 'src/flask/app.py', 'docs/quickstart.rst', 'docs/errorhandling.rst', 'src/flask/app.py']",2.725,0.7647058823529411,0.8877588738035794,0.8041666666465626,1.0,0.69,gpt-4o-mini,explain,"Flask.handle_exception in src/flask/app.py sends got_request_exception, then checks PROPAGATE_EXCEPTIONS (defaulting to testing or debug). If propagating, the exception is re-raised so the debugger shows it. Otherwise it logs the exception with log_exception, wraps it in InternalServerError(original_exception=e), calls a registered 500 handler if one exists, and finalizes the response with from_error_handler=True.",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,small_to_big,
+q11,Why aren't RoutingExceptions passed to user error handlers?,"RoutingExceptions are not passed to user error handlers because they are used internally by Flask to trigger routing actions such as slash redirects (e.g., `RequestRedirect`). This is explicitly handled in the function `handle_http_exception` in **src/flask/app.py**, lines 744-777:
+
+```python
+if isinstance(e, RoutingException):
+    return e
+```
+
+This means these exceptions are returned unchanged and never passed to user-defined error handlers, as they are not meant to be handled by user code but are part of Flask's internal routing mechanism.",819,"['src/flask/app.py', 'src/flask/app.py', 'docs/errorhandling.rst', 'docs/errorhandling.rst', 'docs/blueprints.rst', 'docs/errorhandling.rst', 'CHANGES.rst', 'src/flask/app.py', 'tests/test_user_error_handler.py', 'CHANGES.rst', 'docs/errorhandling.rst', 'tests/test_user_error_handler.py', 'src/flask/app.py', 'src/flask/debughelpers.py', 'docs/errorhandling.rst', 'docs/errorhandling.rst', 'docs/errorhandling.rst', 'src/flask/app.py', 'docs/errorhandling.rst', 'tests/test_user_error_handler.py']",1.27,1.0,0.8978347529978604,0.9999999999666667,1.0,0.82,gpt-4o-mini,explain,"In Flask.handle_http_exception (src/flask/app.py), RoutingException instances such as RequestRedirect are used internally for routing actions like slash redirects, so they are returned unchanged and not passed to error handlers. Exceptions with no code (proxy exceptions) are also returned unchanged.",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,small_to_big,
+q12,Where is the errorhandler decorator implemented?,"The `errorhandler` decorator is implemented in the file **`src/flask/sansio/scaffold.py`**, specifically in the **`Scaffold.errorhandler`** method (lines 597-639).",2568,"['src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/blueprints.py', 'docs/errorhandling.rst', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'tests/test_blueprints.py', 'src/flask/sansio/app.py', 'CHANGES.rst', 'tests/test_blueprints.py', 'src/flask/sansio/app.py', 'docs/lifecycle.rst', 'docs/errorhandling.rst', 'src/flask/sansio/scaffold.py', 'docs/errorhandling.rst', 'tests/test_user_error_handler.py', 'src/flask/sansio/scaffold.py', 'tests/test_user_error_handler.py', 'src/flask/sansio/blueprints.py']",1.068,1.0,0.8810780457069857,0.99999999998,1.0,0.5,gpt-4o-mini,locate,"Scaffold.errorhandler in src/flask/sansio/scaffold.py; it is a decorator that calls register_error_handler(code_or_exception, f), which stores the handler in error_handler_spec keyed by blueprint name, status code and exception class.",['src/flask/sansio/scaffold.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,small_to_big,
+q13,How are sessions stored by default in Flask?,"Sessions in Flask are stored by default in a signed cookie sent to the browser. The session data is serialized and stored client-side in the cookie, which is cryptographically signed using the app's secret key to prevent tampering.
+
+This is explained in multiple places:
+- **docs/tutorial/views.rst** (lines 211-215): ""The data is stored in a *cookie* that is sent to the browser... Flask securely *signs* the data so that it can't be tampered with.""
+- **docs/api.rst** (lines 56-65): ""A session makes it possible to remember information... Flask does this by using a signed cookie.""
+- **docs/quickstart.rst** (lines 771-781): ""This is implemented on top of cookies for you and signs the cookies cryptographically.""
+
+So, by default, Flask sessions are client-side, cookie-based, and signed for security.",609,"['docs/tutorial/views.rst', 'docs/api.rst', 'docs/quickstart.rst', 'docs/tutorial/views.rst', 'docs/quickstart.rst', 'docs/lifecycle.rst', 'docs/api.rst', 'src/flask/sessions.py', 'docs/quickstart.rst', 'src/flask/sessions.py', 'src/flask/ctx.py', 'src/flask/helpers.py', 'docs/quickstart.rst', 'src/flask/sessions.py', 'docs/patterns/sqlalchemy.rst', 'src/flask/sansio/app.py', 'src/flask/sessions.py', 'docs/config.rst', 'docs/config.rst', 'CHANGES.rst']",1.85,1.0,0.9623829171441526,0.9999999999666667,0.5,0.59,gpt-4o-mini,explain,"The default SecureCookieSessionInterface in src/flask/sessions.py stores the session in a cookie signed with itsdangerous URLSafeTimedSerializer using the app's SECRET_KEY (plus SECRET_KEY_FALLBACKS), salt ""cookie-session"", HMAC key derivation and SHA-1 digest, with a tagged JSON serializer. The data is signed, not encrypted.",['src/flask/sessions.py'],0.0,0.0,0.125,0.0,docs,1.0,1.0,1.0,1.0,small_to_big,
+q14,What happens to the session if the app has no SECRET_KEY set?,"If the app has no `SECRET_KEY` set, the session becomes unavailable for writing and raises a `RuntimeError` when you try to modify it. This is implemented in the `NullSession` class in **src/flask/sessions.py**, lines 97-111. The `NullSession` allows read-only access to an empty session but fails on any attempt to set or modify session data, with the error message:
+
+```
+""The session is unavailable because no secret key was set. Set the secret_key on the application to something unique and secret.""
+```
+
+So without a `SECRET_KEY`, you cannot store data in the session.",799,"['docs/api.rst', 'src/flask/sessions.py', 'docs/quickstart.rst', 'tests/test_basic.py', 'docs/config.rst', 'docs/tutorial/deploy.rst', 'docs/tutorial/factory.rst', 'src/flask/sansio/app.py', 'docs/quickstart.rst', 'docs/config.rst', 'tests/test_basic.py', 'src/flask/sessions.py', 'docs/quickstart.rst', 'docs/config.rst', 'src/flask/sessions.py', 'docs/quickstart.rst', 'src/flask/sessions.py', 'docs/quickstart.rst', 'docs/web-security.rst', 'docs/tutorial/deploy.rst']",1.427,1.0,0.9064673123398285,0.8874999999778125,1.0,0.5,gpt-4o-mini,explain,"SecureCookieSessionInterface.get_signing_serializer in src/flask/sessions.py returns None when app.secret_key is not set, so open_session returns None. RequestContext.push in src/flask/ctx.py then uses session_interface.make_null_session, a NullSession that raises an error if you try to modify it.","['src/flask/sessions.py', 'src/flask/ctx.py']",0.0,1.0,0.5,0.5,docs,1.0,0.8,1.0,1.0,small_to_big,
+q15,What happens when a session cookie has an invalid signature?,"When a session cookie has an invalid signature, the `open_session` method in the class `SecureCookieSessionInterface` (file: `src/flask/sessions.py`, lines 298-398) catches the `BadSignature` exception and returns a new empty session (`self.session_class()`).
+
+Specifically, in `open_session`:
+```python
+try:
+    data = s.loads(val, max_age=max_age)
+    return self.session_class(data)
+except BadSignature:
+    return self.session_class()
+```
+
+This means the session is treated as empty and no data from the invalid cookie is loaded.",1472,"['docs/config.rst', 'src/flask/sessions.py', 'docs/quickstart.rst', 'docs/web-security.rst', 'src/flask/sessions.py', 'docs/web-security.rst', 'docs/config.rst', 'src/flask/sessions.py', 'src/flask/sessions.py', 'src/flask/sessions.py', 'docs/config.rst', 'src/flask/sessions.py', 'docs/config.rst', 'src/flask/sessions.py', 'docs/web-security.rst', 'docs/config.rst', 'docs/web-security.rst', 'src/flask/sessions.py', 'docs/config.rst', 'src/flask/sessions.py']",1.692,1.0,0.8891292184785358,0.6791666666496875,1.0,0.86,gpt-4o-mini,explain,"In SecureCookieSessionInterface.open_session (src/flask/sessions.py), s.loads(val, max_age=...) raising BadSignature is caught and a new empty session_class() is returned, so the tampered or expired cookie is ignored.",['src/flask/sessions.py'],0.0,1.0,0.5,1.0,docs,1.0,0.6,1.0,1.0,small_to_big,
+q16,When does Flask delete the session cookie?,"Flask deletes the session cookie in the `SecureCookieSessionInterface.save_session` method (file `src/flask/sessions.py`, lines 350-398) when the session is empty **and** has been modified. Specifically:
+
+- If `not session` (the session is empty) **and** `session.modified` is `True`, Flask calls `response.delete_cookie(...)` to remove the cookie.
+- If the session is empty but not modified, Flask does nothing (does not set or delete the cookie).
+
+So, Flask deletes the session cookie when the session data has been cleared/emptied and the session was modified during the request.",1446,"['src/flask/sessions.py', 'src/flask/sessions.py', 'docs/web-security.rst', 'docs/quickstart.rst', 'docs/web-security.rst', 'docs/config.rst', 'src/flask/sessions.py', 'src/flask/sessions.py', 'docs/quickstart.rst', 'docs/tutorial/views.rst', 'src/flask/sessions.py', 'docs/patterns/sqlalchemy.rst', 'src/flask/sessions.py', 'docs/api.rst', 'CHANGES.rst', 'src/flask/testing.py', 'src/flask/sessions.py', 'docs/config.rst', 'docs/lifecycle.rst', 'docs/web-security.rst']",1.557,0.8,0.9079433206996482,0.99999999998,1.0,0.75,gpt-4o-mini,explain,"In SecureCookieSessionInterface.save_session (src/flask/sessions.py), if the session is empty and was modified, response.delete_cookie is called with the cookie name, domain, path, secure, partitioned, samesite and httponly settings, and Vary: Cookie is added. If it is empty and unmodified, nothing is set.",['src/flask/sessions.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,small_to_big,
+q17,Which extra Python types can be stored in the session beyond plain JSON?,"The extra Python types supported in session storage beyond plain JSON are handled by the `serializer` used in `SecureCookieSessionInterface` (file: **src/flask/sessions.py**, class: **SecureCookieSessionInterface**).
+
+Specifically, the default `serializer` is a compact JSON-derived serializer with support for some extra Python types such as:
+
+- `datetime` objects
+- `tuples`
+
+This is mentioned in the comment above the `serializer` attribute in **src/flask/sessions.py**:
+
+```python
+#: A python serializer for the payload.  The default is a compact
+#: JSON derived serializer with support for some extra Python types
+#: such as datetime objects or tuples.
+serializer = session_json_serializer
+```
+
+Additionally, the serialization logic for these types is implemented in **src/flask/json/provider.py** in the `DefaultJSONProvider` class, which serializes:
+
+- `datetime.datetime` and `datetime.date` as RFC 822 strings
+- `uuid.UUID` as strings
+- `dataclasses.dataclass` as dicts
+- `markupsafe.Markup` (or objects with `__html__` method) as strings
+
+So, beyond plain JSON types, sessions can store at least:
+
+- `datetime` objects
+- `tuples`
+- `uuid.UUID`
+- `dataclasses.dataclass`
+- `Markup` objects
+
+via the custom JSON serializer used by the session interface.",2797,"['docs/quickstart.rst', 'src/flask/json/tag.py', 'src/flask/json/provider.py', 'src/flask/sessions.py', 'CHANGES.rst', 'src/flask/sessions.py', 'tests/test_basic.py', 'docs/tutorial/views.rst', 'CHANGES.rst', 'src/flask/wrappers.py', 'tests/test_basic.py', 'CHANGES.rst', 'tests/test_basic.py', 'docs/api.rst', 'src/flask/json/provider.py', 'CHANGES.rst', 'tests/test_json.py', 'docs/quickstart.rst', 'docs/config.rst', 'src/flask/helpers.py']",3.05,1.0,0.9102658304971353,0.49999999995,1.0,0.27,gpt-4o-mini,explain,"The TaggedJSONSerializer in src/flask/json/tag.py supports dict, tuple, bytes, markupsafe Markup, uuid.UUID and datetime via its default tags (TagDict, PassDict, TagTuple, PassList, TagBytes, TagMarkup, TagUUID, TagDateTime). Custom tags can be added with register().",['src/flask/json/tag.py'],0.0,1.0,0.5,1.0,docs,1.0,0.4,1.0,1.0,small_to_big,
+q18,What is the default lifetime of a permanent session?,"The default lifetime of a permanent session is **31 days**.
+
+- In **docs/config.rst** (lines 219-230), `PERMANENT_SESSION_LIFETIME` is documented as defaulting to `timedelta(days=31)` (2678400 seconds).
+- In **src/flask/sansio/app.py** (lines 194-280), the `App` class has the attribute `permanent_session_lifetime` which defaults to `timedelta(days=31)`.
+- In **src/flask/sessions.py**, the `SessionInterface.get_expiration_time` method uses `app.permanent_session_lifetime` to calculate the expiration date for permanent sessions.
+
+Thus, the permanent session lifetime defaults to 31 days.",1551,"['docs/api.rst', 'docs/config.rst', 'src/flask/sansio/app.py', 'docs/api.rst', 'src/flask/sessions.py', 'docs/web-security.rst', 'docs/config.rst', 'docs/web-security.rst', 'tests/test_basic.py', 'src/flask/sessions.py', 'docs/config.rst', 'docs/config.rst', 'src/flask/sansio/app.py', 'docs/config.rst', 'src/flask/sessions.py', 'src/flask/sessions.py', 'tests/test_basic.py', 'docs/api.rst', 'src/flask/sessions.py', 'src/flask/sessions.py']",1.973,1.0,0.9184525277827809,0.999999999975,1.0,0.29,gpt-4o-mini,config,PERMANENT_SESSION_LIFETIME defaults to timedelta(days=31) in Flask.default_config in src/flask/app.py.,['src/flask/app.py'],0.0,0.0,0.0,0.0,docs,1.0,0.6,0.0,0.0,small_to_big,
+q19,How does Config.from_prefixed_env load environment variables?,"The method `Config.from_prefixed_env` (in `src/flask/config.py`, lines 126-185) loads environment variables as follows:
+
+- It scans all environment variables in `os.environ` that start with the given prefix (default `""FLASK_""`).
+- For each matching variable, it removes the prefix from the key.
+- It attempts to parse the value using a loader function (default `json.loads`) to convert strings into Python types (e.g., dict, list, int). If parsing fails, it keeps the value as a string.
+- If the key contains double underscores (`""__""`), it treats this as nested dictionary keys and creates nested dicts in the config accordingly.
+- Otherwise, it sets the key-value pair directly in the config.
+- Keys are processed in sorted order.
+- Returns `True` after loading all matching variables.
+
+In summary, it loads all environment variables starting with the prefix, parses their values (default JSON parsing), supports nested keys via `""__""`, and sets them into the config object without the prefix.",1655,"['src/flask/config.py', 'docs/config.rst', 'src/flask/config.py', 'src/flask/config.py', 'docs/config.rst', 'src/flask/config.py', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'src/flask/cli.py', 'src/flask/config.py', 'src/flask/config.py', 'tests/test_config.py', 'src/flask/config.py', 'src/flask/config.py', 'src/flask/app.py', 'tests/test_config.py', 'tests/test_config.py', 'docs/config.rst']",2.027,1.0,0.9517887152722886,0.9999999999666667,1.0,0.89,gpt-4o-mini,explain,"Config.from_prefixed_env in src/flask/config.py iterates sorted os.environ keys starting with the prefix (default FLASK_), strips the prefix, tries to parse each value with json.loads (keeping it as a string on failure), and sets it on the config. Keys containing double underscores (__) set values in nested dicts, creating intermediate dicts if needed.",['src/flask/config.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,small_to_big,
+q20,Which attributes does config.from_object load?,"The method `Config.from_object` (in `src/flask/config.py`, lines 218-254) loads **only the uppercase attributes** of the given object (module or class). It ignores any attribute that is not all uppercase.",1283,"['src/flask/config.py', 'src/flask/config.py', 'docs/config.rst', 'src/flask/config.py', 'src/flask/config.py', 'src/flask/config.py', 'docs/config.rst', 'docs/config.rst', 'tests/test_config.py', 'docs/config.rst', 'src/flask/config.py', 'src/flask/config.py', 'src/flask/config.py', 'tests/test_config.py', 'src/flask/config.py', 'docs/config.rst', 'docs/config.rst', 'docs/tutorial/factory.rst', 'src/flask/config.py', 'docs/tutorial/factory.rst']",1.031,1.0,0.8217372854192583,0.9999999999666667,1.0,0.57,gpt-4o-mini,explain,"Config.from_object in src/flask/config.py imports the object if given a string (import_string), then copies only attributes whose names are uppercase (key.isupper()). A dict will not work because its keys are not attributes.",['src/flask/config.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,small_to_big,
+q21,How does the flask CLI find the application in a module?,"The flask CLI finds the application in a module using the function `locate_app` in **`src/flask/cli.py`** (lines 241-264):
+
+1. It imports the specified module by name.
+2. If `app_name` is `None`, it calls `find_best_app(module)` to locate the app:
+   - Looks for common app variables named `""app""` or `""application""` that are instances of `Flask`.
+   - If none found, checks if there is exactly one `Flask` instance in the module.
+   - If multiple Flask instances exist, raises an error asking to specify which one.
+   - If no instance found, looks for factory functions named `""create_app""` or `""make_app""` that return a `Flask` app when called without arguments.
+   - Raises an error if no app or factory is found.
+3. If `app_name` is provided, it calls `find_app_by_string(module, app_name)`:
+   - Parses `app_name` as either a variable or a function call with optional arguments.
+   - Retrieves the attribute or calls the factory function with parsed arguments.
+   - Returns the resulting `Flask` app instance or raises an error if invalid.
+
+In summary, the CLI tries to import the module, then either finds a default app by common names or single instance, or uses the provided app name (possibly a factory function call) to get the Flask application instance.",1637,"['src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'docs/cli.rst', 'docs/appcontext.rst', 'src/flask/cli.py', 'docs/patterns/appfactories.rst', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'docs/patterns/appfactories.rst', 'docs/patterns/packages.rst', 'src/flask/cli.py']",2.813,1.0,0.926119119087636,0.94999999997625,1.0,0.56,gpt-4o-mini,explain,"find_best_app in src/flask/cli.py first looks for attributes named app or application that are Flask instances, then for exactly one Flask instance among module attributes (raising NoAppException if several), then for a factory function named create_app or make_app which it calls with no arguments. If nothing is found it raises NoAppException.",['src/flask/cli.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,small_to_big,
+q22,"How does Flask load .env and .flaskenv files, and which wins?","Flask loads `.env` and `.flaskenv` files using the `load_dotenv` function in **`src/flask/cli.py`**, lines 704-769.
+
+- It first tries to load `.flaskenv` and `.env` files (in that order) if `load_defaults=True`.
+- If a specific path is provided (e.g., via the `--env-file` option), that file is loaded **after** the default files and takes precedence.
+- Environment variables already set in `os.environ` are never overwritten.
+- The precedence order is: environment variables > `--env-file` > `.env` > `.flaskenv`.
+
+So, `.flaskenv` is loaded first, then `.env`, and finally any explicitly specified env file (`--env-file`), with later sources overriding earlier ones unless the variable is already set in the environment.",2203,"['src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'src/flask/cli.py', 'src/flask/app.py', 'src/flask/app.py', 'src/flask/cli.py', 'src/flask/helpers.py', 'src/flask/cli.py', 'docs/cli.rst', 'src/flask/cli.py', 'src/flask/config.py', 'docs/cli.rst', 'src/flask/cli.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/cli.rst', 'docs/cli.rst', 'CHANGES.rst']",1.952,0.8571428571428571,0.897416032255291,0.99999999998,1.0,0.46,gpt-4o-mini,explain,"load_dotenv in src/flask/cli.py uses python-dotenv to load .flaskenv then .env (found from the current directory), so .env values override .flaskenv, and an explicit path overrides both. Variables already in os.environ are never overwritten. If python-dotenv isn't installed it prints a tip and returns False.",['src/flask/cli.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,small_to_big,
+q23,How does Flask determine whether debug mode is enabled from the environment?,"Flask determines whether debug mode is enabled from the environment in the function `get_debug_flag()` in the file `src/flask/helpers.py`. It checks the `FLASK_DEBUG` environment variable and returns `True` unless the variable is unset or set to `""0""`, `""false""`, or `""no""` (case-insensitive).",730,"['src/flask/helpers.py', 'src/flask/sansio/app.py', 'docs/config.rst', 'docs/quickstart.rst', 'docs/debugging.rst', 'docs/debugging.rst', 'src/flask/app.py', 'docs/cli.rst', 'src/flask/app.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/config.rst', 'docs/config.rst', 'src/flask/cli.py', 'src/flask/helpers.py', 'docs/config.rst', 'src/flask/app.py', 'docs/cli.rst', 'src/flask/sansio/app.py', 'CHANGES.rst']",1.357,0.42857142857142855,0.9374070122225615,0.8333333332916666,1.0,0.91,gpt-4o-mini,explain,"get_debug_flag in src/flask/helpers.py reads FLASK_DEBUG and returns True if it is set and its lowercase value is not ""0"", ""false"" or ""no"".",['src/flask/helpers.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,small_to_big,
+q24,Why does calling app.run() do nothing when using the flask run command?,"Calling `app.run()` does nothing when using the `flask run` command because of an explicit check in the `Flask.run` method that detects if the server is already started by the CLI.
+
+Specifically, in **`src/flask/app.py`**, inside the `run` method (lines 546-667), there is this code:
+
+```python
+if os.environ.get(""FLASK_RUN_FROM_CLI"") == ""true"":
+    if not is_running_from_reloader():
+        click.secho(
+            "" * Ignoring a call to 'app.run()' that would block""
+            "" the current 'flask' CLI command.\n""
+            ""   Only call 'app.run()' in an 'if __name__ == \""__main__\""' guard."",
+            fg=""red"",
+        )
+    return
+```
+
+- When the `flask run` CLI command is used, it sets the environment variable `FLASK_RUN_FROM_CLI=true`.
+- The `app.run()` method detects this and immediately returns without starting the server.
+- This prevents the server from being started twice or blocking the CLI command.
+- It also prints a warning message advising to only call `app.run()` inside an `if __name__ == ""__main__""` guard.
+
+Thus, the design intentionally disables `app.run()` when running via the `flask run` CLI command to avoid conflicts and encourage proper usage.
+
+**Summary:**  
+`app.run()` is ignored during `flask run` because the environment variable `FLASK_RUN_FROM_CLI` is set, and the `run` method returns early to avoid starting a second server process.",2766,"['src/flask/app.py', 'docs/cli.rst', 'src/flask/app.py', 'docs/patterns/appfactories.rst', 'src/flask/app.py', 'src/flask/cli.py', 'src/flask/cli.py', 'docs/quickstart.rst', 'docs/server.rst', 'docs/server.rst', 'docs/cli.rst', 'docs/tutorial/install.rst', 'src/flask/cli.py', 'docs/tutorial/factory.rst', 'docs/testing.rst', 'src/flask/app.py', 'src/flask/app.py', 'docs/cli.rst', 'src/flask/app.py', 'src/flask/cli.py']",2.811,0.7692307692307693,0.9618969238176115,0.8666666666377778,1.0,0.67,gpt-4o-mini,explain,"Flask.run in src/flask/app.py checks if FLASK_RUN_FROM_CLI is ""true""; if so it prints a warning (unless in the reloader) that it is ignoring app.run() because it would block the flask CLI command, and returns without starting a server.",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,small_to_big,
+q25,What host and port does app.run use by default?,"The default host and port used by `app.run` are determined in the `Flask.run` method in **src/flask/app.py**, lines 546-667:
+
+- **Host**: Defaults to `'127.0.0.1'` unless the `SERVER_NAME` config variable is set, in which case the host part of `SERVER_NAME` is used.
+- **Port**: Defaults to `5000` unless the `SERVER_NAME` config variable specifies a port, or a `port` argument is explicitly passed.
+
+Specifically:
+```python
+if not host:
+    if sn_host:
+        host = sn_host
+    else:
+        host = ""127.0.0.1""
+
+if port or port == 0:
+    port = int(port)
+elif sn_port:
+    port = int(sn_port)
+else:
+    port = 5000
+```
+
+So by default, `app.run()` listens on `127.0.0.1:5000`.",1808,"['src/flask/app.py', 'src/flask/app.py', 'CHANGES.rst', 'src/flask/app.py', 'docs/patterns/appdispatch.rst', 'src/flask/app.py', 'docs/cli.rst', 'src/flask/app.py', 'docs/cli.rst', 'src/flask/app.py', 'CHANGES.rst', 'docs/patterns/appdispatch.rst', 'docs/server.rst', 'src/flask/app.py', 'src/flask/app.py', 'src/flask/cli.py', 'docs/server.rst', 'src/flask/sansio/app.py', 'src/flask/app.py', 'src/flask/testing.py']",2.212,1.0,0.8751667540125766,0.699999999965,1.0,0.67,gpt-4o-mini,config,"Flask.run in src/flask/app.py defaults to host 127.0.0.1 and port 5000, unless SERVER_NAME in the config provides a host/port. It also enables the reloader and debugger when debug is on and runs threaded by default via werkzeug's run_simple.",['src/flask/app.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,small_to_big,
+q26,What happens when a request context is pushed?,"When a request context is pushed (see **docs/reqcontext.rst**, lines 26-42 and 97-102):
+
+- A `RequestContext` object is created and pushed.
+- This also creates and pushes an `AppContext` first if the application context is not already the top context.
+- While these contexts are pushed, proxies like `current_app`, `g`, `request`, and `session` become available to the thread handling the request.
+
+In short, pushing a request context ensures both the request and application contexts are active, providing access to request-specific and app-specific variables during the request lifetime.",576,"['docs/reqcontext.rst', 'docs/appcontext.rst', 'docs/reqcontext.rst', 'docs/api.rst', 'docs/reqcontext.rst', 'src/flask/ctx.py', 'src/flask/app.py', 'docs/reqcontext.rst', 'docs/reqcontext.rst', 'src/flask/app.py', 'docs/api.rst', 'docs/reqcontext.rst', 'docs/reqcontext.rst', 'docs/api.rst', 'src/flask/ctx.py', 'src/flask/app.py', 'src/flask/ctx.py', 'docs/shell.rst', 'docs/testing.rst', 'docs/lifecycle.rst']",1.692,0.8333333333333334,0.9135787838161243,0.9999999999,0.3333333333333333,0.4,gpt-4o-mini,explain,"RequestContext.push in src/flask/ctx.py pushes an app context if none is active for this app, sets the request context var, opens the session via app.session_interface.open_session (falling back to make_null_session), and then matches the request URL so the session is available to URL converters.",['src/flask/ctx.py'],0.0,0.0,0.16666666666666666,0.0,docs,1.0,1.0,1.0,1.0,small_to_big,
+q27,What object backs flask.g and where is it defined?,"The object that backs `flask.g` is an instance of the class assigned to `Flask.app_ctx_globals_class`, which defaults to `ctx._AppCtxGlobals`.
+
+This is documented in **docs/api.rst** around lines 163-174:
+
+> ""A namespace object that can store data during an application context. This is an instance of `Flask.app_ctx_globals_class`, which defaults to `ctx._AppCtxGlobals`.""
+
+So, `flask.g` is a proxy to an instance of `ctx._AppCtxGlobals`.
+
+The exact class `ctx._AppCtxGlobals` is defined elsewhere (not shown in the snippets), but the key point is that `flask.g` is backed by the `app_ctx_globals_class` instance attached to the current application context.",497,"['docs/extensiondev.rst', 'docs/api.rst', 'src/flask/app.py', 'docs/design.rst', 'src/flask/sansio/app.py', 'src/flask/ctx.py', 'src/flask/ctx.py', 'CHANGES.rst', 'src/flask/sansio/app.py', 'docs/design.rst', 'docs/quickstart.rst', 'docs/index.rst', 'docs/patterns/deferredcallbacks.rst', 'docs/design.rst', 'src/flask/app.py', 'docs/appcontext.rst', 'docs/quickstart.rst', 'README.md', 'src/flask/sansio/app.py', 'docs/design.rst']",1.866,1.0,0.8848908660822373,0.49999999995,0.5,0.0,gpt-4o-mini,locate,"flask.g is backed by _AppCtxGlobals in src/flask/ctx.py, a plain namespace object created with each application context. It supports get, pop, setdefault, `in` and iteration.",['src/flask/ctx.py'],0.0,0.0,0.16666666666666666,0.0,docs,1.0,0.6,0.0,0.3333333333333333,small_to_big,
+q28,How does after_this_request work?,"The function `after_this_request` is defined in **`src/flask/ctx.py`** (lines 117-149).
+
+- It registers a callback function `f` to be executed after the current request finishes.
+- It requires an active request context (`ctx = _cv_request.get(None)`), otherwise it raises a `RuntimeError`.
+- The callback `f` is appended to the current request context's `_after_request_functions` list.
+- The callback receives the response object and must return a response object (possibly modified).
+- This allows modifying the response for only the current request, unlike `after_request` which applies to all requests.
+
+In summary, `after_this_request` works by storing the given function in the current request context to be called after the request ends, enabling per-request response modifications.",967,"['src/flask/ctx.py', 'src/flask/ctx.py', 'docs/lifecycle.rst', 'src/flask/sansio/scaffold.py', 'docs/patterns/deferredcallbacks.rst', 'src/flask/sansio/scaffold.py', 'src/flask/ctx.py', 'src/flask/sansio/blueprints.py', 'docs/reqcontext.rst', 'docs/patterns/deferredcallbacks.rst', 'docs/reqcontext.rst', 'docs/reqcontext.rst', 'src/flask/ctx.py', 'docs/patterns/viewdecorators.rst', 'src/flask/app.py', 'docs/reqcontext.rst', 'docs/reqcontext.rst', 'docs/api.rst', 'tests/test_basic.py', 'CHANGES.rst']",1.657,1.0,0.8695604724285572,0.999999999975,1.0,0.57,gpt-4o-mini,explain,"after_this_request in src/flask/ctx.py appends the function to the current request context's _after_request_functions list (raising RuntimeError if no request context is active). Flask.process_response in src/flask/app.py calls these functions first with the response, before the app and blueprint after_request functions.","['src/flask/ctx.py', 'src/flask/app.py']",1.0,1.0,1.0,0.5,code,0.0,0.4,1.0,1.0,small_to_big,
+q29,In what order are before_request and after_request functions called for blueprints and the app?,"The code snippets do not explicitly show the exact order in which `before_request` and `after_request` functions are called for blueprints and the app.
+
+However, based on the Flask design implied here:
+
+- **`before_request` functions:**
+  - When registered on the **app** (`Scaffold.before_request`), they run before every request.
+  - When registered on a **blueprint** (`Scaffold.before_request` on a blueprint), they run before requests handled by that blueprint only.
+  - Blueprint `before_app_request` (mentioned in docs but not shown in code) runs before *every* request, regardless of blueprint.
+
+- **`after_request` functions:**
+  - When registered on the **app** (`Scaffold.after_request`), they run after every request.
+  - When registered on a **blueprint** (`Scaffold.after_request`), they run after requests handled by that blueprint only.
+  - Blueprint `after_app_request` (`Blueprint.after_app_request`) registers a function to run after *every* request, like the app-level `after_request`.
+
+**Typical execution order (Flask standard behavior):**
+
+1. All app-level `before_request` functions run first.
+2. Then blueprint-level `before_request` functions for the blueprint handling the request run.
+3. The view function executes.
+4. Blueprint-level `after_request` functions run (for the blueprint handling the request).
+5. App-level `after_request` functions run last.
+
+This means:
+
+- `before_request`: app-level → blueprint-level
+- `after_request`: blueprint-level → app-level
+
+**Summary:**
+
+- `before_request`: app's before_request functions run before blueprint's.
+- `after_request`: blueprint's after_request functions run before app's.
+
+This ordering ensures that app-wide setup happens first, blueprint-specific setup next, and response modifications happen in reverse order.
+
+---
+
+**Source files/functions:**
+
+- `Scaffold.before_request` (src/flask/sansio/scaffold.py lines 459-484)
+- `Scaffold.after_request` (src/flask/sansio/scaffold.py lines 486-505)
+- `Blueprint.after_app_request` (src/flask/sansio/blueprints.py lines 563-571)
+- Documentation snippet (docs/tutorial/views.rst lines 236-245) mentions `before_app_request` but does not detail order explicitly.",1074,"['src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/tutorial/views.rst', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/scaffold.py', 'tests/test_async.py', 'docs/blueprints.rst', 'src/flask/app.py', 'docs/tutorial/views.rst', 'src/flask/sansio/blueprints.py', 'tests/test_blueprints.py', 'tests/test_async.py', 'src/flask/sansio/blueprints.py', 'tests/test_blueprints.py', 'src/flask/sansio/scaffold.py', 'src/flask/sansio/scaffold.py', 'docs/reqcontext.rst', 'docs/blueprints.rst']",3.902,0.8,0.0,0.9999999999,0.25,0.65,gpt-4o-mini,explain,"Flask.preprocess_request in src/flask/app.py runs url_value_preprocessors and then before_request functions for the app first, then blueprints (names = (None, *reversed(request.blueprints))); if a before_request function returns a value, handling stops and it is used as the response. process_response runs per-request after_this_request functions, then after_request functions for blueprints and then the app, each in reverse registration order, and finally saves the session.",['src/flask/app.py'],0.0,0.0,0.1,0.0,code,0.0,0.2,0.0,0.14285714285714285,small_to_big,
+q30,How are blueprint routes prefixed and named when registered on the app?,"Blueprint routes are prefixed and named as follows:
+
+- **URL Prefixing:**  
+  When registering a blueprint via `App.register_blueprint` (in `src/flask/sansio/app.py`, function `register_blueprint`), you can pass a `url_prefix` option. This prefix is prepended to all the blueprint's routes. For example, registering with `url_prefix='/pages'` will prefix all blueprint routes with `/pages` (see `docs/blueprints.rst` lines 108-117).
+
+- **Endpoint Naming:**  
+  The blueprint's name (given in the `Blueprint` constructor) prefixes the endpoint names of its routes, but does **not** affect the URL path. For example, a route function `show` in a blueprint named `simple_page` will have an endpoint named `simple_page.show` (see `docs/blueprints.rst` lines 76-84).
+
+- **Name Option on Registration:**  
+  In `Blueprint.register` (in `src/flask/sansio/blueprints.py`, function `register`), the blueprint can be registered with a different name via the `name` option. This changes the endpoint prefix used for `url_for` and allows multiple registrations of the same blueprint with unique endpoint namespaces.
+
+- **Nested Blueprints and Prefix Merging:**  
+  When nested blueprints are registered, their `url_prefix` and `subdomain` options are merged with the parent blueprint's prefixes (see `Blueprint.register` lines 273-377). The final URL prefix is a concatenation of parent and child prefixes.
+
+**Summary:**  
+- URL paths are prefixed by the `url_prefix` option passed at registration (or the blueprint's own `url_prefix` if none is passed).  
+- Endpoint names are prefixed by the blueprint's registered name (default is the blueprint's `name` attribute, but can be overridden by the `name` option).  
+- Nested blueprints combine prefixes and names accordingly.",1914,"['docs/blueprints.rst', 'src/flask/sansio/app.py', 'docs/blueprints.rst', 'docs/tutorial/views.rst', 'src/flask/sansio/app.py', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'docs/blueprints.rst', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/app.py', 'docs/errorhandling.rst', 'docs/blueprints.rst', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst']",3.332,1.0,0.8610279958565891,0.4499999999775,1.0,0.52,gpt-4o-mini,explain,"BlueprintSetupState.add_url_rule in src/flask/sansio/blueprints.py joins the url_prefix with the rule, sets the subdomain default, merges url_defaults, and registers the rule on the app with the endpoint f""{name_prefix}.{blueprint_name}.{endpoint}"" (leading dots stripped), e.g. ""admin.index"".",['src/flask/sansio/blueprints.py'],0.0,0.0,0.16666666666666666,0.0,docs,1.0,0.6,0.0,0.3333333333333333,small_to_big,
+q31,How do nested blueprints combine their url_prefix values?,"Nested blueprints combine their `url_prefix` values by concatenating the parent's `url_prefix` with the child's `url_prefix`. This means the child's URLs are prefixed by both the parent's and the child's prefixes.
+
+- See **docs/blueprints.rst** lines 124-138 for the explanation and example:
+
+```python
+parent = Blueprint('parent', __name__, url_prefix='/parent')
+child = Blueprint('child', __name__, url_prefix='/child')
+parent.register_blueprint(child)
+app.register_blueprint(parent)
+```
+
+- The resulting URL for the child will be `/parent/child/...`.
+
+- The test in **tests/test_blueprints.py** function `test_nesting_url_prefixes` confirms this behavior by registering child blueprints with various combinations of prefixes and asserting the combined URL works as expected.",1413,"['src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'docs/patterns/urlprocessors.rst', 'tests/test_blueprints.py', 'docs/blueprints.rst', 'docs/blueprints.rst', 'docs/tutorial/views.rst', 'docs/tutorial/blog.rst', 'CHANGES.rst', 'docs/blueprints.rst', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'src/flask/sansio/blueprints.py', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'src/flask/sansio/app.py', 'src/flask/sansio/blueprints.py', 'docs/blueprints.rst', 'docs/patterns/urlprocessors.rst']",1.823,0.9090909090909091,0.9422299559226431,0.9166666666361111,1.0,0.33,gpt-4o-mini,explain,"In Blueprint.register (src/flask/sansio/blueprints.py), for each child blueprint, if both the parent state and child have a url_prefix they are joined as parent.rstrip('/') + '/' + child.lstrip('/'); otherwise whichever is set is used. Subdomains are combined similarly (child + '.' + parent) and name_prefix is set to the parent's name before registering the child.",['src/flask/sansio/blueprints.py'],1.0,1.0,1.0,1.0,code,0.0,0.8,1.0,1.0,small_to_big,
+q32,How does MethodView pick which method to call?,"In **`src/flask/views.py`**, inside the **`MethodView`** class, the method to call is chosen in the **`dispatch_request`** method:
+
+- It looks up an instance method matching the HTTP request method name in lowercase (e.g., `""get""` for `GET`, `""post""` for `POST`) using `getattr(self, request.method.lower(), None)`.
+- If the request method is `HEAD` and no handler is found, it falls back to the `get` method.
+- If no suitable method is found, it raises an assertion error.
+- Finally, it calls the found method with URL parameters.
+
+So, **`MethodView` dispatches to the instance method whose name matches the lowercase HTTP method of the request**.",2324,"['src/flask/views.py', 'docs/views.rst', 'src/flask/views.py', 'docs/views.rst', 'src/flask/views.py', 'tests/test_views.py', 'tests/test_views.py', 'src/flask/views.py', 'docs/api.rst', 'tests/test_views.py', 'tests/test_views.py', 'tests/test_views.py', 'docs/views.rst', 'tests/test_helpers.py', 'docs/patterns/methodoverrides.rst', 'src/flask/views.py', 'docs/views.rst', 'src/flask/views.py', 'tests/test_views.py', 'tests/test_views.py']",1.58,1.0,0.7998921209595987,0.99999999998,1.0,0.62,gpt-4o-mini,explain,"MethodView.dispatch_request in src/flask/views.py looks up a method named after request.method.lower() (e.g. get, post). For HEAD requests without a head method it falls back to get. It asserts the method exists and calls it via current_app.ensure_sync. The allowed methods are collected from the defined handlers in __init_subclass__.",['src/flask/views.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,small_to_big,
+q33,Does View.as_view create a new view instance per request?,"In **`src/flask/views.py`**, the class method **`View.as_view`** creates a new view instance per request **only if** the class attribute **`init_every_request`** is `True` (which is the default).
+
+- If `init_every_request` is `True` (default), a new instance of the view class is created inside the generated view function for every request.
+- If `init_every_request` is `False`, a single instance is created once when `as_view` is called, and reused for all requests.
+
+This behavior is explained in the **`as_view`** method and documented in the docstring and docs (`docs/views.rst` lines 126-131 and 140-154).
+
+**Summary:**  
+Yes, by default `View.as_view` creates a new view instance per request unless `init_every_request` is set to `False`.",1731,"['src/flask/views.py', 'docs/views.rst', 'src/flask/views.py', 'docs/views.rst', 'docs/views.rst', 'docs/views.rst', 'src/flask/views.py', 'docs/views.rst', 'docs/views.rst', 'src/flask/views.py', 'docs/async-await.rst', 'docs/tutorial/views.rst', 'docs/views.rst', 'docs/views.rst', 'src/flask/views.py', 'docs/views.rst', 'docs/extensiondev.rst', 'src/flask/views.py', 'docs/views.rst', 'docs/views.rst']",1.897,1.0,0.8867896927609705,0.99999999998,0.6666666666666666,0.71,gpt-4o-mini,explain,"Yes by default: in View.as_view (src/flask/views.py), when init_every_request is True (the default) a new instance of the class is created for every request. If a subclass sets init_every_request = False, one instance is created up front and reused for all requests. Class decorators are applied to the generated view function.",['src/flask/views.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,small_to_big,
+q34,How does Flask support async view functions?,"Flask supports async view functions by running the coroutine on a separate thread with its own event loop instead of using an event loop on the main thread. This approach maintains backwards compatibility with existing synchronous extensions and code but introduces some performance overhead due to thread management.
+
+This is explained in:
+- **docs/design.rst**, lines 188-196: Flask executes async coroutines on a separate thread rather than using an async-first event loop.
+- **docs/async-await.rst**, lines 34-39: Flask starts an event loop in a thread to run the async view function and then returns the result.",661,"['docs/async-await.rst', 'docs/design.rst', 'docs/async-await.rst', 'docs/async-await.rst', 'docs/async-await.rst', 'src/flask/app.py', 'docs/async-await.rst', 'docs/async-await.rst', 'docs/tutorial/views.rst', 'docs/async-await.rst', 'docs/async-await.rst', 'src/flask/app.py', 'docs/views.rst', 'docs/async-await.rst', 'src/flask/app.py', 'src/flask/app.py', 'docs/reqcontext.rst', 'CHANGES.rst', 'docs/design.rst', 'docs/async-await.rst']",1.356,0.875,0.9469389114569481,0.0,0.0,0.14,gpt-4o-mini,explain,"Flask.ensure_sync in src/flask/app.py returns plain functions unchanged and wraps coroutine functions with async_to_sync, which uses asgiref.sync.async_to_sync. If asgiref is not installed it raises RuntimeError telling you to install Flask with the 'async' extra.",['src/flask/app.py'],0.0,0.0,0.16666666666666666,0.0,docs,1.0,1.0,1.0,1.0,small_to_big,
+q35,Which extra types does Flask's default JSON provider serialize?,"Flask's default JSON provider (`DefaultJSONProvider` in `src/flask/json/provider.py`) serializes these extra types beyond the standard JSON types:
+
+- `datetime.datetime` and `datetime.date` serialized to RFC 822 (HTTP date) strings.
+- `uuid.UUID` serialized to a string.
+- `decimal.Decimal` serialized to a string.
+- `dataclasses.dataclass` instances converted to dicts via `dataclasses.asdict`.
+- Objects with a `__html__` method (e.g., `markupsafe.Markup`) serialized by calling their `__html__` method and converting to string.
+
+This is implemented in the `_default` function used as the `default` handler in `DefaultJSONProvider`.",3993,"['src/flask/json/provider.py', 'src/flask/sansio/app.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/sansio/app.py', 'docs/api.rst', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/__init__.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/sansio/app.py', 'src/flask/json/provider.py', 'src/flask/json/provider.py', 'src/flask/json/__init__.py']",1.677,1.0,0.9339655015361368,0.699999999965,1.0,0.88,gpt-4o-mini,explain,"DefaultJSONProvider in src/flask/json/provider.py uses the _default function: date/datetime become HTTP date (RFC 822) strings, decimal.Decimal and uuid.UUID become strings, dataclasses go through dataclasses.asdict, and objects with __html__ use that method. It also defaults to ensure_ascii=True and sort_keys=True.",['src/flask/json/provider.py'],1.0,1.0,1.0,1.0,code,0.0,0.0,1.0,1.0,small_to_big,
+q36,How does flash() store messages?,"The `flash()` function (in `src/flask/helpers.py`, lines 311-342) stores messages by appending a `(category, message)` tuple to a list under the session key `""_flashes""`. Specifically, it:
+
+1. Retrieves the current list of flashes from `session.get(""_flashes"", [])`.
+2. Appends the new `(category, message)` tuple to this list.
+3. Assigns the updated list back to `session[""_flashes""]`.
+
+This ensures the flashed messages are saved in the user's session for retrieval in the next request.",1073,"['docs/quickstart.rst', 'src/flask/helpers.py', 'docs/patterns/flashing.rst', 'src/flask/helpers.py', 'src/flask/helpers.py', 'docs/api.rst', 'src/flask/helpers.py', 'docs/patterns/flashing.rst', 'docs/patterns/flashing.rst', 'docs/quickstart.rst', 'docs/tutorial/templates.rst', 'docs/templating.rst', 'src/flask/helpers.py', 'docs/patterns/flashing.rst', 'src/flask/helpers.py', 'src/flask/helpers.py', 'docs/api.rst', 'docs/patterns/flashing.rst', 'docs/patterns/flashing.rst', 'tests/test_signals.py']",1.694,1.0,0.6970332325622874,0.6388888888675925,1.0,0.55,gpt-4o-mini,explain,"flash in src/flask/helpers.py gets the session's ""_flashes"" list, appends a (category, message) tuple (category defaults to ""message""), reassigns session[""_flashes""] so external session stores notice the change, and sends the message_flashed signal.",['src/flask/helpers.py'],0.0,1.0,0.5,1.0,docs,1.0,0.4,1.0,1.0,small_to_big,
+q37,Which template file extensions get autoescaping by default?,"Autoescaping is enabled by default for templates with the following file extensions:
+
+- `.html`
+- `.htm`
+- `.xml`
+- `.xhtml`
+
+Additionally, `.svg` templates also have autoescaping enabled when using `flask.templating.render_template`.
+
+This is stated in:
+- **docs/quickstart.rst** (lines 439-451)
+- **docs/templating.rst** (lines 20-27)",711,"['docs/quickstart.rst', 'docs/templating.rst', 'src/flask/sansio/app.py', 'docs/templating.rst', 'docs/templating.rst', 'docs/templating.rst', 'CHANGES.rst', 'docs/design.rst', 'tests/templates/escaping_template.html', 'docs/patterns/templateinheritance.rst', 'src/flask/sansio/app.py', 'tests/templates/non_escaping_template.txt', 'docs/design.rst', 'docs/patterns/flashing.rst', 'docs/api.rst', 'CHANGES.rst', 'src/flask/templating.py', 'docs/patterns/appfactories.rst', 'docs/config.rst', 'docs/config.rst']",1.16,1.0,0.9158656160216254,0.99999999995,0.0,0.67,gpt-4o-mini,explain,"App.select_jinja_autoescape in src/flask/sansio/app.py returns True for templates ending in .html, .htm, .xml, .xhtml or .svg, and True when no filename is given (e.g. render_template_string).",['src/flask/sansio/app.py'],0.0,1.0,0.3333333333333333,1.0,docs,1.0,0.8,1.0,1.0,small_to_big,
+q38,"How does Flask find templates across the app and blueprints, and how can I debug template loading?","Flask finds templates by searching through the loaders associated with the application and its blueprints in order. Each blueprint can have its own `template_folder`, and Flask tries to locate the requested template in these folders.
+
+Specifically:
+
+- The app and each blueprint have loaders that look for templates in their respective `templates` folders.
+- When rendering a template, Flask tries each loader in sequence until it finds a match.
+- If multiple loaders find the template or none do, it can cause issues.
+
+To debug template loading, enable the `EXPLAIN_TEMPLATE_LOADING` config variable in your Flask app. This triggers detailed logging of each step Flask takes to locate a template.
+
+This debugging is implemented in the function `explain_template_loading_attempts` in **`src/flask/debughelpers.py`** (lines 124-178). It logs:
+
+- Which loaders were tried (application or blueprint loaders).
+- Whether each loader found the template or not.
+- Warnings if multiple loaders matched or if none matched.
+- Additional hints if the lookup was done from a blueprint endpoint.
+
+This helps you understand exactly where Flask is looking for templates and why a template might not be found or is ambiguous.
+
+**Summary:**
+
+- Templates are searched in app and blueprint `template_folder`s via loaders.
+- Enable `EXPLAIN_TEMPLATE_LOADING` config to get detailed logs.
+- Logs are generated by `explain_template_loading_attempts` in `src/flask/debughelpers.py`.",1069,"['src/flask/debughelpers.py', 'docs/blueprints.rst', 'src/flask/debughelpers.py', 'docs/patterns/appfactories.rst', 'docs/quickstart.rst', 'tests/test_apps/blueprintapp/apps/frontend/__init__.py', 'docs/lifecycle.rst', 'tests/test_blueprints.py', 'docs/blueprints.rst', 'tests/test_templating.py', 'tests/test_blueprints.py', 'CHANGES.rst', 'src/flask/debughelpers.py', 'tests/test_blueprints.py', 'tests/test_blueprints.py', 'tests/test_apps/blueprintapp/apps/admin/__init__.py', 'tests/test_blueprints.py', 'src/flask/debughelpers.py', 'docs/tutorial/templates.rst', 'docs/blueprints.rst']",2.56,1.0,0.884286973722966,0.9166666666361111,0.5,0.65,gpt-4o-mini,explain,"DispatchingJinjaLoader in src/flask/templating.py iterates the app's loader and each blueprint's loader and returns the first source found, raising TemplateNotFound otherwise. If EXPLAIN_TEMPLATE_LOADING is enabled it tries every loader and calls explain_template_loading_attempts from src/flask/debughelpers.py to log each attempt.","['src/flask/templating.py', 'src/flask/debughelpers.py']",1.0,1.0,1.0,0.5,code,0.0,0.6,1.0,1.0,small_to_big,
+q39,How can a test modify the session before making a request?,"To modify the session before making a request in a test, use the `session_transaction()` method of the test client as shown in **`src/flask/testing.py`** inside the `FlaskClient` class. This method opens a session transaction context where you can modify the session directly. For example:
+
+```python
+with client.session_transaction() as session:
+    session['key'] = 'value'
+```
+
+After exiting the `with` block, the session changes are saved and will be available in subsequent requests made by the client.
+
+This is also referenced in the docstring of `FlaskClient.session_transaction()` in **`src/flask/testing.py` lines 108-261**.",2185,"['tests/test_basic.py', 'tests/test_session_interface.py', 'CHANGES.rst', 'src/flask/testing.py', 'tests/test_basic.py', 'tests/test_basic.py', 'docs/api.rst', 'docs/testing.rst', 'tests/test_basic.py', 'tests/test_basic.py', 'docs/testing.rst', 'tests/test_basic.py', 'examples/tutorial/tests/test_auth.py', 'docs/tutorial/tests.rst', 'tests/test_reqctx.py', 'docs/tutorial/views.rst', 'tests/test_testing.py', 'tests/test_basic.py', 'tests/test_reqctx.py', 'tests/test_basic.py']",1.558,1.0,0.8676193540684788,0.6791666666496875,1.0,0.5,gpt-4o-mini,explain,"FlaskClient.session_transaction in src/flask/testing.py is a context manager: it creates a test request context, opens the session with the app's session_interface and yields it. After the block it saves the session to a response and copies the Set-Cookie headers into the client's cookies, so the next request sees the changes. It raises RuntimeError if the session backend did not open a session.",['src/flask/testing.py'],0.0,1.0,0.25,1.0,tests,1.0,0.8,1.0,1.0,small_to_big,
+q40,How does Flask limit the size of incoming request bodies?,"Flask limits the size of incoming request bodies primarily using the `MAX_CONTENT_LENGTH` configuration key.
+
+- **File:** `src/flask/wrappers.py`  
+- **Function:** `Request.max_content_length` (property)
+
+Details:
+- `max_content_length` returns the maximum number of bytes allowed for the entire request body.
+- If the request body exceeds this limit, Flask raises a `413 RequestEntityTooLarge` error.
+- This limit defaults to `None` (no limit) but can be set globally via `app.config['MAX_CONTENT_LENGTH']` or per-request.
+- Example from `docs/patterns/fileuploads.rst` shows setting `app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000` to limit uploads to 16 MB.
+
+Additionally, for multipart form data, Flask also limits the size of non-file form fields using:
+
+- **File:** `src/flask/wrappers.py`  
+- **Function:** `Request.max_form_memory_size` (property)
+
+This uses the `MAX_FORM_MEMORY_SIZE` config (default 500,000 bytes) to limit the size of individual non-file form fields, raising the same 413 error if exceeded.
+
+**Summary:**  
+- Use `MAX_CONTENT_LENGTH` to limit total request body size.  
+- Use `MAX_FORM_MEMORY_SIZE` to limit size of non-file form fields in multipart uploads.  
+- Both raise `RequestEntityTooLarge` (413) if limits are exceeded.",1056,"['src/flask/wrappers.py', 'docs/patterns/fileuploads.rst', 'src/flask/wrappers.py', 'src/flask/wrappers.py', 'docs/config.rst', 'src/flask/wrappers.py', 'docs/patterns/fileuploads.rst', 'src/flask/wrappers.py', 'docs/config.rst', 'src/flask/wrappers.py', 'src/flask/wrappers.py', 'docs/web-security.rst', 'tests/test_request.py', 'src/flask/wrappers.py', 'docs/config.rst', 'src/flask/wrappers.py', 'docs/config.rst', 'src/flask/wrappers.py', 'docs/reqcontext.rst', 'docs/config.rst']",2.325,1.0,0.9440538234662351,0.99999999998,0.6666666666666666,0.7,gpt-4o-mini,explain,"Request.max_content_length in src/flask/wrappers.py returns a per-request override if set, otherwise current_app.config[""MAX_CONTENT_LENGTH""] (default None, meaning no app-level limit). Exceeding it raises 413 RequestEntityTooLarge. Related limits are MAX_FORM_MEMORY_SIZE (500000) and MAX_FORM_PARTS (1000).",['src/flask/wrappers.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,small_to_big,
+u01,How does Flask's built-in ORM define database models?,"Flask itself does not have a built-in ORM; instead, it commonly uses **Flask-SQLAlchemy** as the ORM extension.
+
+From the provided snippets:
+
+- In **docs/patterns/sqlalchemy.rst**, models are defined by subclassing the `db.Model` class provided by Flask-SQLAlchemy (see lines 200-209 in docs/extensiondev.rst).
+- The typical pattern is to create a `db = SQLAlchemy()` instance (e.g., in `model.py`) and then define models by subclassing `db.Model`.
+- The `db` instance is initialized with the Flask app via `db.init_app(app)` (see docs/patterns/appfactories.rst lines 70-81).
+
+**Summary:**  
+Flask uses the Flask-SQLAlchemy extension to define database models by subclassing `db.Model` from an instance of `SQLAlchemy()` initialized with the Flask app. There is no built-in ORM in Flask itself.",691,"['docs/patterns/sqlalchemy.rst', 'docs/extensiondev.rst', 'docs/patterns/sqlalchemy.rst', 'docs/patterns/sqlalchemy.rst', 'docs/patterns/appfactories.rst', 'docs/patterns/sqlalchemy.rst', 'docs/design.rst', 'docs/views.rst', 'docs/patterns/sqlalchemy.rst', 'docs/patterns/sqlalchemy.rst', 'docs/design.rst', 'docs/design.rst', 'docs/tutorial/database.rst', 'docs/tutorial/database.rst', 'docs/tutorial/database.rst', 'docs/patterns/appfactories.rst', 'docs/patterns/sqlalchemy.rst', 'docs/patterns/sqlalchemy.rst', 'docs/design.rst', 'docs/tutorial/database.rst']",1.649,,,,,,,unanswerable,Flask does not include an ORM or database layer; the codebase contains no model definitions. Database support comes from extensions such as Flask-SQLAlchemy.,[],,,,,,,,,,small_to_big,1.0
+u02,Where is the WebSocket handler implemented in Flask?,The provided code snippets do not contain information about where the WebSocket handler is implemented in Flask.,747,"['docs/logging.rst', 'docs/quickstart.rst', 'CHANGES.rst', 'docs/quickstart.rst', 'docs/async-await.rst', 'docs/design.rst', 'docs/quickstart.rst', 'docs/signals.rst', 'docs/lifecycle.rst', 'src/flask/app.py', 'docs/reqcontext.rst', 'src/flask/sansio/app.py', 'docs/reqcontext.rst', 'docs/quickstart.rst', 'docs/patterns/appdispatch.rst', 'docs/tutorial/factory.rst', 'src/flask/logging.py', 'docs/signals.rst', 'docs/signals.rst', 'CHANGES.rst']",0.727,,,,,,,unanswerable,Flask's codebase has no WebSocket handler; Flask is a WSGI framework and does not implement WebSockets.,[],,,,,,,,,,small_to_big,1.0
+u03,How does Flask's built-in rate limiter throttle requests per IP?,"The provided code snippets and documentation do not contain any information about Flask's built-in rate limiter or how it throttles requests per IP.
+
+Flask itself does not include a built-in rate limiter. Rate limiting is typically implemented using extensions like **Flask-Limiter** or external middleware/services.
+
+**Summary:**  
+- No mention of rate limiting or throttling per IP in the given code or docs.  
+- Flask does not have a built-in rate limiter; use extensions like Flask-Limiter for that functionality.",825,"['docs/web-security.rst', 'docs/patterns/fileuploads.rst', 'docs/lifecycle.rst', 'src/flask/wrappers.py', 'docs/patterns/fileuploads.rst', 'docs/web-security.rst', 'src/flask/wrappers.py', 'docs/reqcontext.rst', 'docs/deploying/proxy_fix.rst', 'docs/quickstart.rst', 'docs/logging.rst', 'docs/patterns/methodoverrides.rst', 'docs/reqcontext.rst', 'docs/quickstart.rst', 'src/flask/wrappers.py', 'docs/signals.rst', 'docs/quickstart.rst', 'docs/config.rst', 'docs/web-security.rst', 'docs/reqcontext.rst']",1.581,,,,,,,unanswerable,"Flask has no built-in rate limiter; rate limiting is provided by extensions such as Flask-Limiter, not by this codebase.",[],,,,,,,,,,small_to_big,1.0
+u04,What does Flask's GraphQL schema module export?,The provided code snippets and documentation do not contain any information about Flask's GraphQL schema module or what it exports.,792,"['docs/appcontext.rst', 'docs/patterns/appfactories.rst', 'docs/patterns/appfactories.rst', 'docs/api.rst', 'docs/patterns/sqlalchemy.rst', 'src/flask/cli.py', 'src/flask/ctx.py', 'src/flask/app.py', 'docs/patterns/appfactories.rst', 'src/flask/testing.py', 'docs/design.rst', 'tests/test_helpers.py', 'docs/tutorial/blog.rst', 'src/flask/sansio/app.py', 'CHANGES.rst', 'docs/extensiondev.rst', 'docs/blueprints.rst', 'docs/patterns/appfactories.rst', 'docs/patterns/sqlite3.rst', 'examples/tutorial/flaskr/blog.py']",0.829,,,,,,,unanswerable,There is no GraphQL module in Flask; the codebase does not contain GraphQL support.,[],,,,,,,,,,small_to_big,1.0

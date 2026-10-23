@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "repo": "https://github.com/pallets/flask",
+    "ref": "3.1.0",
+    "questions": 44,
+    "exclude": [],
+    "embeddings": "local:BAAI/bge-base-en-v1.5",
+    "reranker": "BAAI/bge-reranker-base",
+    "generator": "gpt-4o-mini",
+    "judge": "gpt-4o-mini"
+  },
+  "results": [
+    {
+      "config": "baseline",
+      "hit@1": 0.35,
+      "hit@5": 0.725,
+      "mrr@10": 0.518,
+      "recall@5": 0.688,
+      "noncode@1": 0.525,
+      "noncode_share@5": 0.58,
+      "code_hit@1": 0.75,
+      "code_mrr@10": 0.827,
+      "faithfulness": 0.893,
+      "answer_relevancy": 0.772,
+      "context_precision": 0.769,
+      "context_recall": 0.379,
+      "factual_correctness": 0.348,
+      "refusal_rate": 0.75,
+      "context_tokens": 371,
+      "p50_latency_s": 1.76
+    },
+    {
+      "config": "headers",
+      "hit@1": 0.5,
+      "hit@5": 0.775,
+      "mrr@10": 0.648,
+      "recall@5": 0.738,
+      "noncode@1": 0.45,
+      "noncode_share@5": 0.52,
+      "code_hit@1": 0.875,
+      "code_mrr@10": 0.9,
+      "faithfulness": 0.933,
+      "answer_relevancy": 0.856,
+      "context_precision": 0.831,
+      "context_recall": 0.64,
+      "factual_correctness": 0.502,
+      "refusal_rate": 0.75,
+      "context_tokens": 653,
+      "p50_latency_s": 1.58
+    },
+    {
+      "config": "small_to_big",
+      "hit@1": 0.5,
+      "hit@5": 0.775,
+      "mrr@10": 0.648,
+      "recall@5": 0.738,
+      "noncode@1": 0.45,
+      "noncode_share@5": 0.52,
+      "code_hit@1": 0.875,
+      "code_mrr@10": 0.9,
+      "faithfulness": 0.97,
+      "answer_relevancy": 0.882,
+      "context_precision": 0.84,
+      "context_recall": 0.835,
+      "factual_correctness": 0.496,
+      "refusal_rate": 0.75,
+      "context_tokens": 1565,
+      "p50_latency_s": 1.94
+    }
+  ]
+}

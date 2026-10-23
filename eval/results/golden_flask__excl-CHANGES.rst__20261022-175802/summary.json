@@ -1,0 +1,100 @@
+{
+  "meta": {
+    "repo": "https://github.com/pallets/flask",
+    "ref": "3.1.0",
+    "questions": 44,
+    "exclude": [
+      "CHANGES.rst"
+    ],
+    "embeddings": "local:BAAI/bge-base-en-v1.5",
+    "reranker": "BAAI/bge-reranker-base",
+    "generator": null,
+    "judge": null
+  },
+  "results": [
+    {
+      "config": "baseline",
+      "hit@1": 0.35,
+      "hit@5": 0.75,
+      "mrr@10": 0.521,
+      "recall@5": 0.712,
+      "noncode@1": 0.525,
+      "noncode_share@5": 0.555,
+      "code_hit@1": 0.75,
+      "code_mrr@10": 0.827,
+      "p50_latency_s": 0.02
+    },
+    {
+      "config": "dense_k5",
+      "hit@1": 0.35,
+      "hit@5": 0.75,
+      "mrr@10": 0.521,
+      "recall@5": 0.712,
+      "noncode@1": 0.525,
+      "noncode_share@5": 0.555,
+      "code_hit@1": 0.75,
+      "code_mrr@10": 0.827,
+      "p50_latency_s": 0.02
+    },
+    {
+      "config": "headers",
+      "hit@1": 0.5,
+      "hit@5": 0.775,
+      "mrr@10": 0.65,
+      "recall@5": 0.738,
+      "noncode@1": 0.45,
+      "noncode_share@5": 0.51,
+      "code_hit@1": 0.875,
+      "code_mrr@10": 0.9,
+      "p50_latency_s": 0.02
+    },
+    {
+      "config": "ast",
+      "hit@1": 0.35,
+      "hit@5": 0.775,
+      "mrr@10": 0.532,
+      "recall@5": 0.738,
+      "noncode@1": 0.575,
+      "noncode_share@5": 0.6,
+      "code_hit@1": 0.825,
+      "code_mrr@10": 0.872,
+      "p50_latency_s": 0.02
+    },
+    {
+      "config": "headers_rerank",
+      "hit@1": 0.375,
+      "hit@5": 0.775,
+      "mrr@10": 0.57,
+      "recall@5": 0.738,
+      "noncode@1": 0.45,
+      "noncode_share@5": 0.49,
+      "code_hit@1": 0.725,
+      "code_mrr@10": 0.815,
+      "p50_latency_s": 0.53
+    },
+    {
+      "config": "hybrid",
+      "hit@1": 0.4,
+      "hit@5": 0.775,
+      "mrr@10": 0.583,
+      "recall@5": 0.738,
+      "noncode@1": 0.55,
+      "noncode_share@5": 0.54,
+      "code_hit@1": 0.8,
+      "code_mrr@10": 0.855,
+      "p50_latency_s": 0.03
+    },
+    {
+      "config": "hybrid_rerank",
+      "hit@1": 0.4,
+      "hit@5": 0.8,
+      "mrr@10": 0.587,
+      "recall@5": 0.75,
+      "noncode@1": 0.425,
+      "noncode_share@5": 0.525,
+      "code_hit@1": 0.725,
+      "code_mrr@10": 0.832,
+      "p50_latency_s": 0.54
+    }
+  ]
+}

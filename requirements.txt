@@ -1,8 +1,14 @@
 langchain
-langchain-community
+langchain-community==0.3.31   # ragas still imports modules removed in 0.4
 langchain-chroma
 langchain-openai
 langchain-text-splitters
 chromadb
 openai
 python-dotenv
+rank_bm25
+sentence-transformers
+ragas>=0.4,<0.5
+pandas
+tree-sitter-language-pack
+pytest

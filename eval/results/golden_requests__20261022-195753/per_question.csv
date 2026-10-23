@@ -1,0 +1,685 @@
+id,question,answer,context_tokens,sources,latency_s,type,reference_answer,gold_files,hit@1,hit@5,mrr@10,recall@5,top1_kind,noncode@1,noncode_share@5,code_hit@1,code_mrr@10,faithfulness,answer_relevancy,context_precision,context_recall,factual_correctness,ragas_judge,config,refused
+r01,What happens when you call requests.get() without creating a Session?,"When you call `requests.get()` without creating a `Session`, the function `requests.request()` in **src/requests/api.py** (lines 47-59) is used. This function:
+
+- Creates a temporary `Session` using a `with` statement (`with sessions.Session() as session:`).
+- Sends the request via `session.request(...)`.
+- Automatically closes the session after the request completes, ensuring no sockets are left open.
+
+So, a one-off `Session` is created and closed immediately for that single request, providing connection-pooling and cookie handling only for the duration of that request.
+
+**Summary:**  
+`requests.get()` creates a temporary `Session` internally, sends the request, then closes the session immediately after, so no session-level state (like cookies) persists beyond that single request.",693,"['src/requests/api.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/api.rst', 'docs/user/advanced.rst', 'src/requests/cookies.py', 'docs/user/advanced.rst', 'src/requests/models.py', 'src/requests/sessions.py', 'docs/index.rst', 'src/requests/sessions.py', 'docs/user/quickstart.rst']",2.255,explain,"requests.get in src/requests/api.py calls request('get', ...), which creates a temporary Session with `with sessions.Session() as session:` and returns session.request(method=method, url=url, **kwargs). The session is closed when the with block exits, so no connection pooling or cookies persist between calls.",['src/requests/api.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,0.8181818181818182,0.947923887279379,0.8055555555287036,1.0,0.76,gpt-4o-mini,headers,
+r02,Walk through what Session.request does to send a request.,"In **`src/requests/sessions.py`**, the **`Session.request`** method (lines 522-529) is responsible for preparing and sending a request. Here’s the high-level flow:
+
+1. **Parameters:** It accepts HTTP method, URL, and optional parameters like `params`, `data`, `json`, etc. These are used to create a `Request` object.
+
+2. **Request Preparation:** Inside `Session.request`, a `Request` object is created with the given method, URL, and data.
+
+3. **Sending the Request:** The `Request` is prepared into a `PreparedRequest` and passed to `Session.send` (see lines 686-748).
+
+4. **Session.send** (lines 686-748) handles:
+   - Validating the request type (must be `PreparedRequest`).
+   - Managing redirects (`allow_redirects`).
+   - Handling streaming (`stream`).
+   - Resolving redirects and attaching history (lines 728-734).
+   - Returning the final `Response` object.
+
+5. **Response:** The response is returned back through `Session.request` to the caller.
+
+In summary, **`Session.request`** builds a `Request`, prepares it, then calls **`Session.send`** to perform the actual HTTP transaction, handle redirects, and return the response.",594,"['src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/api.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'tests/test_requests.py', 'src/requests/sessions.py', 'src/requests/sessions.py']",2.528,multi_file,"Session.request in src/requests/sessions.py builds a Request object, calls prepare_request (merging session headers, params, auth, cookies and hooks into a PreparedRequest), calls merge_environment_settings to merge proxies, stream, verify and cert with environment settings, then calls self.send. send picks the adapter with get_adapter, calls adapter.send, dispatches response hooks, extracts cookies, and follows redirects with resolve_redirects.",['src/requests/sessions.py'],1.0,1.0,1.0,1.0,code,0.0,0.0,1.0,1.0,1.0,0.6723320200504613,0.499999999975,0.75,0.29,gpt-4o-mini,headers,
+r03,How are request-level settings merged with session-level settings?,"In **src/requests/sessions.py**, the function **merge_setting** handles merging request-level settings with session-level settings.
+
+- If either setting is `None`, it returns the other.
+- If both are dictionaries (mappings), it merges them by:
+  - Creating a new dictionary from the session setting.
+  - Updating it with the request setting, so request-level keys override session-level keys.
+- If they are not dictionaries, it returns the request-level setting directly.
+
+This means **request-level dictionary settings override or extend session-level dictionary settings**, while non-dictionary settings are replaced by the request-level value.
+
+This behavior is also described in the docs (`docs/user/advanced.rst`):  
+> ""Any dictionaries that you pass to a request method will be merged with the session-level values that are set. The method-level parameters override session parameters.""",480,"['src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'docs/api.rst', 'src/requests/sessions.py', 'tests/test_requests.py']",2.249,explain,"merge_setting in src/requests/sessions.py returns the request setting if the session setting is None and vice versa; for non-dict values the request setting wins. For mappings it starts from the session values, updates them with the request values, and then removes any keys whose value is None, so a request can unset a session header by passing None.",['src/requests/sessions.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,1.0,0.8397216225825206,0.8874999999778125,1.0,0.89,gpt-4o-mini,headers,
+r04,What default headers does a new Session send?,"The default headers sent by a new `Session` are set in the `Session.__init__` method in **src/requests/sessions.py** (lines 375-394). Specifically, `self.headers` is initialized by calling `default_headers()`.
+
+So, the default headers are those returned by the `default_headers()` function. The exact headers are not shown in the provided snippets, but they come from that function.
+
+**Summary:**  
+- File: `src/requests/sessions.py`  
+- Function: `Session.__init__`  
+- Default headers are set via `self.headers = default_headers()`  
+- The actual headers are defined in the `default_headers()` function (not shown here).",668,"['docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/api.rst', 'tests/test_requests.py', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'tests/test_requests.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'HISTORY.md', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/cookies.py']",1.614,config,"Session.__init__ sets self.headers = default_headers(). default_headers in src/requests/utils.py returns a CaseInsensitiveDict with User-Agent 'python-requests/<version>', Accept-Encoding (DEFAULT_ACCEPT_ENCODING), Accept '*/*' and Connection 'keep-alive'.","['src/requests/utils.py', 'src/requests/sessions.py']",0.0,1.0,0.5,0.5,docs,1.0,0.4,1.0,1.0,0.9,0.8538641683909315,0.0,0.5,0.56,gpt-4o-mini,headers,
+r05,What is the maximum number of redirects requests will follow by default?,"The default maximum number of redirects Requests will follow is **30**.
+
+This is set in the `Session.__init__` function in **src/requests/sessions.py** (lines 426-434) where `self.max_redirects` is initialized to `DEFAULT_REDIRECT_LIMIT`, which is defined as 30 in **src/requests/models.py** (lines 69-81).",554,"['docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'tests/test_requests.py', 'src/requests/models.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'tests/test_requests.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'tests/test_requests.py', 'HISTORY.md', 'tests/test_requests.py', 'HISTORY.md', 'src/requests/sessions.py', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'tests/test_requests.py', 'HISTORY.md', 'src/requests/auth.py']",0.979,config,"DEFAULT_REDIRECT_LIMIT = 30 in src/requests/models.py; Session.max_redirects defaults to it, and resolve_redirects in src/requests/sessions.py raises TooManyRedirects when the history length reaches max_redirects.","['src/requests/models.py', 'src/requests/sessions.py']",0.0,1.0,0.25,1.0,docs,1.0,0.6,1.0,1.0,1.0,0.9300934664278308,0.6999999999766667,0.6666666666666666,0.55,gpt-4o-mini,headers,
+r06,When does requests strip the Authorization header during a redirect?,"Requests strips the `Authorization` header during a redirect when the hostname changes between the original URL and the redirect URL.
+
+Specifically, in **`src/requests/sessions.py`**, function **`SessionRedirectMixin.should_strip_auth`** (lines 127-143):
+
+- If `old_parsed.hostname != new_parsed.hostname`, it returns `True` (strip auth).
+- Exception: if the redirect is from `http` on port 80 (or default) to `https` on port 443 (or default) on the same host, it does **not** strip the header.
+
+Tests in **`tests/test_requests.py`** confirm this behavior (e.g., `test_should_strip_auth_host_change`).
+
+Summary:  
+**Authorization header is stripped on redirects only when the hostname changes, except for http→https redirects on standard ports on the same host.**",686,"['src/requests/sessions.py', 'HISTORY.md', 'HISTORY.md', 'src/requests/sessions.py', 'tests/test_requests.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'HISTORY.md', 'docs/user/quickstart.rst', 'src/requests/auth.py', 'src/requests/sessions.py', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'HISTORY.md', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'tests/test_requests.py', 'HISTORY.md', 'src/requests/sessions.py', 'tests/test_requests.py']",1.99,explain,"SessionRedirectMixin.rebuild_auth in src/requests/sessions.py deletes the Authorization header if should_strip_auth(old_url, new_url) is True. should_strip_auth returns True when the hostname changes, or when the scheme or port changes, except for an http->https upgrade on standard ports (80->443) and default-port changes on the same scheme. If trust_env is set, netrc credentials for the new URL are re-applied.",['src/requests/sessions.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,1.0,0.9416995353982646,0.99999999998,0.6666666666666666,0.62,gpt-4o-mini,headers,
+r07,How does requests change the HTTP method when following a redirect?,"In **src/requests/sessions.py**, within the **SessionRedirectMixin.rebuild_method** function (lines 332-353):
+
+- If the response status code is **303 See Other** and the original method is not ""HEAD"", the method is changed to **""GET""**.
+- If the response status code is **302 Found** and the original method is not ""HEAD"", the method is changed to **""GET""**.
+- If the response status code is **301 Moved Permanently** and the original method is **""POST""**, the method is changed to **""GET""**.
+
+This behavior mimics browser behavior despite the HTTP standards. The final method is then assigned back to `prepared_request.method`.",654,"['src/requests/sessions.py', 'HISTORY.md', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'tests/test_requests.py', 'src/requests/api.py', 'docs/user/advanced.rst', 'tests/test_requests.py', 'docs/user/quickstart.rst', 'HISTORY.md', 'src/requests/sessions.py', 'tests/test_requests.py', 'HISTORY.md', 'tests/test_requests.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'tests/test_requests.py', 'tests/test_requests.py']",1.729,explain,"SessionRedirectMixin.rebuild_method in src/requests/sessions.py turns the method into GET for a 303 See Other (unless HEAD), for a 302 Found (unless HEAD, mimicking browsers), and for a POST answered with a 301 Moved Permanently.",['src/requests/sessions.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,0.8333333333333334,0.7068543682024487,0.8055555555287036,1.0,0.89,gpt-4o-mini,headers,
+r08,How does a Session decide which transport adapter handles a URL?,"In **src/requests/sessions.py**, the function **Session.get_adapter(url)** decides which transport adapter handles a URL by iterating over all registered adapters and returning the first adapter whose prefix matches the start of the URL (case-insensitive). If no adapter matches, it raises an `InvalidSchema` error.",523,"['docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/adapters.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'tests/test_requests.py', 'src/requests/adapters.py', 'src/requests/sessions.py', 'src/requests/adapters.py', 'src/requests/sessions.py', 'src/requests/adapters.py', 'docs/user/advanced.rst']",1.107,explain,"Session.get_adapter in src/requests/sessions.py iterates self.adapters and returns the first adapter whose prefix matches the lowercase URL; if none match it raises InvalidSchema('No connection adapters were found for ...'). Session.mount keeps adapters ordered by descending prefix length, so the most specific prefix wins. By default HTTPAdapter is mounted for 'https://' and 'http://'.",['src/requests/sessions.py'],0.0,1.0,0.2,1.0,docs,1.0,0.6,0.0,0.5,1.0,0.8730706193589736,0.99999999998,0.3333333333333333,0.63,gpt-4o-mini,headers,
+r09,Does requests retry failed connections by default?,"No, Requests does not retry failed connections by default.
+
+This is stated in:
+- **docs/user/advanced.rst** (lines 1035-1045): ""By default, Requests does not retry failed connections.""
+- **src/requests/adapters.py** in the `HTTPAdapter` class (lines 175-184): The `max_retries` parameter defaults to no retries, and retries only apply to certain failures like DNS lookup or connection timeouts, not after data has been sent.
+
+To enable retries, you must explicitly configure them using `urllib3.util.Retry` with a `Session` and `HTTPAdapter`.",625,"['docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/adapters.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'HISTORY.md', 'docs/community/recommended.rst', 'HISTORY.md', 'HISTORY.md', 'src/requests/exceptions.py', 'tests/test_requests.py', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'docs/index.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'src/requests/adapters.py', 'src/requests/sessions.py']",1.239,explain,"No. In HTTPAdapter.__init__ (src/requests/adapters.py) DEFAULT_RETRIES is 0, which becomes Retry(0, read=False). Passing max_retries uses Retry.from_int, and it only applies to failed DNS lookups, socket connections and connection timeouts, never to requests where data reached the server.",['src/requests/adapters.py'],0.0,1.0,0.5,1.0,docs,1.0,0.6,1.0,1.0,1.0,0.8996712874882468,0.99999999995,0.0,0.71,gpt-4o-mini,headers,
+r10,What is the default connection pool size of HTTPAdapter?,"The default connection pool size of `HTTPAdapter` is controlled by the parameter `pool_maxsize`.
+
+From the docstring snippet in **`src/requests/adapters.py` around lines 175-180**:
+
+```python
+:param pool_maxsize: The maximum number of connections to save in the pool.
+```
+
+The actual default value is set in the `HTTPAdapter` constructor (not fully shown here), but by Requests' standard defaults, `pool_maxsize` defaults to **10**.
+
+So, the default connection pool size of `HTTPAdapter` is **10**.",562,"['src/requests/adapters.py', 'src/requests/adapters.py', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/adapters.py', 'HISTORY.md', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'HISTORY.md', 'src/requests/adapters.py']",1.521,config,"DEFAULT_POOLSIZE = 10 in src/requests/adapters.py is used for both pool_connections and pool_maxsize, and DEFAULT_POOLBLOCK = False so the pool does not block when full.",['src/requests/adapters.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,0.4,0.9551788275222729,0.0,0.0,0.6,gpt-4o-mini,headers,
+r11,How is the timeout argument interpreted when sending a request?,"The `timeout` argument when sending a request is interpreted as either:
+
+- A single float value specifying the number of seconds to wait for the server to send data before giving up (read timeout).
+- Or a tuple `(connect timeout, read timeout)` specifying separate timeouts for establishing the connection and waiting for the server to send data.
+
+This means the timeout controls how long the client waits **between bytes** received from the server, not the total time for the entire response download.
+
+References:  
+- `src/requests/api.py` (lines 32-38) — `timeout` can be a float or tuple `(connect timeout, read timeout)`.  
+- `docs/user/advanced.rst` (lines 1104-1112) — explains read timeout as wait time between bytes from server.  
+- `docs/user/quickstart.rst` (lines 540-549) — clarifies timeout is not total response time but time waiting for server to send data.",697,"['docs/user/advanced.rst', 'src/requests/api.py', 'src/requests/adapters.py', 'docs/user/quickstart.rst', 'src/requests/adapters.py', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/exceptions.py', 'docs/user/advanced.rst', 'tests/test_requests.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'tests/test_requests.py', 'tests/test_testserver.py', 'tests/test_requests.py', 'tests/test_requests.py', 'src/requests/adapters.py', 'tests/test_requests.py']",1.689,explain,"HTTPAdapter.send in src/requests/adapters.py: a tuple is unpacked as (connect, read) into a urllib3 Timeout (raising ValueError if it isn't a 2-tuple), an existing urllib3 Timeout is used as is, and any other value (a float or None) is used for both connect and read timeouts.",['src/requests/adapters.py'],0.0,1.0,0.3333333333333333,1.0,docs,1.0,0.4,0.0,0.5,1.0,0.9117783370689301,0.5888888888692593,0.0,0.35,gpt-4o-mini,headers,
+r12,How does requests translate urllib3 errors into its own exceptions?,"Requests translates urllib3 errors into its own exceptions primarily in the `HTTPAdapter.send` function in **src/requests/adapters.py**.
+
+- It catches urllib3 exceptions (like `_SSLError`, `_HTTPError`, `_ProxyError`, `ReadTimeoutError`, `_InvalidHeader`, `ClosedPoolError`).
+- Then it raises corresponding Requests exceptions such as `SSLError`, `ProxyError`, `ReadTimeout`, `InvalidHeader`, and `ConnectionError`, passing the original exception and the request object for context.
+- There are version-specific branches for handling `_SSLError` differently depending on urllib3 version (<1.22 vs ≥1.22).
+
+This mapping ensures that urllib3 errors are wrapped into Requests' own exception hierarchy for consistent error handling.",663,"['src/requests/exceptions.py', 'docs/user/advanced.rst', 'docs/api.rst', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/__init__.py', 'tests/test_requests.py', 'src/requests/exceptions.py', 'src/requests/exceptions.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/__init__.py', 'tests/test_requests.py', 'src/requests/exceptions.py', 'src/requests/exceptions.py', 'src/requests/adapters.py', 'src/requests/models.py', 'src/requests/sessions.py', 'src/requests/help.py', 'docs/user/advanced.rst']",1.948,explain,"HTTPAdapter.send in src/requests/adapters.py catches urllib3 errors: ProtocolError/OSError become ConnectionError; MaxRetryError becomes ConnectTimeout (for connect timeouts), RetryError (ResponseError), ProxyError, SSLError or ConnectionError depending on the reason; ClosedPoolError becomes ConnectionError; ReadTimeoutError becomes ReadTimeout; urllib3 InvalidHeader becomes InvalidHeader.",['src/requests/adapters.py'],0.0,1.0,0.25,1.0,code,0.0,0.4,0.0,0.5,0.875,0.8946019884214569,0.4777777777618519,0.0,0.38,gpt-4o-mini,headers,
+r13,"If I catch requests.exceptions.Timeout, which errors will I catch?","You will catch all timeout-related errors, specifically:
+
+- `requests.exceptions.ConnectTimeout` (timeout while trying to connect)
+- `requests.exceptions.ReadTimeout` (timeout while waiting for data)
+
+This is because `Timeout` (in `src/requests/exceptions.py`, lines 55-77) is the base class for both `ConnectTimeout` and `ReadTimeout`. Catching `Timeout` will catch both subclasses.",644,"['src/requests/exceptions.py', 'src/requests/adapters.py', 'docs/user/quickstart.rst', 'src/requests/exceptions.py', 'tests/test_requests.py', 'src/requests/api.py', 'tests/test_requests.py', 'src/requests/adapters.py', 'docs/user/quickstart.rst', 'src/requests/adapters.py', 'tests/test_requests.py', 'tests/test_requests.py', 'tests/test_requests.py', 'tests/test_requests.py', 'tests/test_requests.py', 'tests/test_requests.py', 'src/requests/adapters.py', 'docs/api.rst', 'src/requests/adapters.py', 'tests/test_testserver.py']",1.241,explain,"In src/requests/exceptions.py, Timeout is a RequestException; ConnectTimeout subclasses both ConnectionError and Timeout, and ReadTimeout subclasses Timeout, so catching Timeout catches both connect and read timeouts. ConnectTimeout is documented as safe to retry.",['src/requests/exceptions.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,0.8,0.8462940489496269,0.7499999999625,1.0,0.75,gpt-4o-mini,headers,
+r14,What does Response.raise_for_status do?,"In the file **src/requests/models.py**, the method **Response.raise_for_status()** checks the HTTP response status code and:
+
+- Raises a `requests.exceptions.HTTPError` if the status code indicates a client error (4XX) or server error (5XX).
+- Does nothing (returns `None`) if the status code indicates a successful response (typically 2XX).
+
+This is confirmed by the example in **docs/user/quickstart.rst** (lines 385-404), where calling `raise_for_status()` on a 404 response raises an HTTPError, but calling it on a 200 response returns `None`.",650,"['docs/user/quickstart.rst', 'src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'src/requests/adapters.py', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/models.py', 'tests/test_requests.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/api.rst', 'tests/test_requests.py', 'src/requests/structures.py', 'docs/user/advanced.rst']",1.392,explain,"Response.raise_for_status in src/requests/models.py decodes the reason (utf-8, falling back to iso-8859-1) and raises HTTPError with a message like '404 Client Error: <reason> for url: <url>' for 400-499 statuses or '5xx Server Error: ...' for 500-599. Otherwise it does nothing.",['src/requests/models.py'],0.0,1.0,0.5,1.0,docs,1.0,0.6,1.0,1.0,1.0,0.8390595353281682,0.499999999975,0.0,0.62,gpt-4o-mini,headers,
+r15,Is response.ok the same as checking for status 200?,"No. In **src/requests/models.py**, the `Response.ok` property returns `True` for any status code less than 400 (i.e., from 200 up to but not including 400), not just for status code 200. It is explicitly stated that `ok` is **not** a check for status code `200 OK` only.",610,"['src/requests/models.py', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'tests/test_testserver.py', '.github/SECURITY.md', 'src/requests/status_codes.py', 'docs/community/vulnerabilities.rst', 'tests/test_requests.py', 'src/requests/models.py', 'tests/test_lowlevel.py', 'tests/test_lowlevel.py', 'tests/test_lowlevel.py', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'HISTORY.md', 'HISTORY.md', 'src/requests/api.py']",0.949,explain,"No. Response.ok in src/requests/models.py calls raise_for_status and returns False if HTTPError is raised, True otherwise, so any status below 400 (including 3xx) is ok.",['src/requests/models.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,1.0,0.8104853349080967,0.8041666666465626,0.0,0.67,gpt-4o-mini,headers,
+r16,How does response.text decide which encoding to use?,"The encoding used by `response.text` is determined in the **`Response.text` property** (file: `src/requests/models.py`, lines 916-927):
+
+- It first tries to get the encoding from the HTTP `Content-Type` header (i.e., the charset parameter).
+- If no encoding is specified in the headers, Requests will guess the encoding using libraries like `charset_normalizer` or `chardet`.
+- If the `Content-Type` header contains `text` but no charset is specified, Requests defaults to `ISO-8859-1` as per RFC 2616.
+- You can override this behavior by manually setting `response.encoding` before accessing `response.text`.
+
+This is also documented in `docs/user/quickstart.rst` and `docs/user/advanced.rst`.",681,"['src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/models.py', 'HISTORY.md', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'HISTORY.md', 'src/requests/models.py', 'src/requests/utils.py', 'docs/user/quickstart.rst', 'docs/community/faq.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'src/requests/utils.py', 'src/requests/utils.py']",1.515,explain,"Response.text in src/requests/models.py uses response.encoding; if it is None it falls back to apparent_encoding (detected with charset_normalizer or chardet). It decodes with errors='replace' and falls back to the default codec on LookupError/TypeError. The encoding comes from get_encoding_from_headers in src/requests/utils.py: the charset parameter, else ISO-8859-1 for text/* content types, else utf-8 for application/json.","['src/requests/models.py', 'src/requests/utils.py']",1.0,1.0,1.0,0.5,code,0.0,0.8,1.0,1.0,1.0,0.8587572843884415,0.99999999998,0.3333333333333333,0.27,gpt-4o-mini,headers,
+r17,How does response.json() handle the encoding of the body?,"In **src/requests/models.py**, inside the **Response.json()** method (lines 955-962), the encoding handling works as follows:
+
+- If `self.encoding` is not set and `self.content` exists with length > 3, it tries to detect the encoding using `guess_json_utf(self.content)` based on JSON RFC 4627 (which expects UTF-8, UTF-16, or UTF-32).
+- If an encoding is detected, it attempts to decode the content using that encoding.
+- If detection or decoding fails, it falls back to using `self.text`, which itself relies on `self.encoding` or HTTP headers to determine encoding (see `Response.text` method in lines 916-927).
+
+So, **response.json()** first tries to auto-detect UTF encodings for JSON content if no encoding is set, then falls back to the text property which uses HTTP headers or manually set encoding.",611,"['src/requests/models.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'HISTORY.md', 'src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst']",1.726,explain,"Response.json in src/requests/models.py: if no encoding is set and the content is longer than 3 bytes, it guesses the UTF encoding with guess_json_utf and tries to decode with it. Otherwise it parses self.text. JSON parse errors are re-raised as requests.exceptions.JSONDecodeError.",['src/requests/models.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,1.0,0.7724468472822444,0.9166666666361111,1.0,0.63,gpt-4o-mini,headers,
+r18,What happens if you read a streamed response's content twice with iter_content?,"In **src/requests/models.py**, the `Response.content` property (lines 894-902) shows that if the content has already been consumed (`self._content_consumed` is `True`), attempting to read it again raises a `RuntimeError` with the message:
+
+```python
+""The content for this response was already consumed""
+```
+
+Since `iter_content` reads the response stream in chunks and consumes the content, reading a streamed response's content twice with `iter_content` will raise this `RuntimeError`.",628,"['src/requests/models.py', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'HISTORY.md', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/utils.py', 'src/requests/models.py', 'HISTORY.md', 'tests/test_requests.py', 'docs/user/advanced.rst']",1.334,explain,"Response.iter_content in src/requests/models.py raises StreamConsumedError if the content was already consumed and was not stored (self._content is still a bool). If the content was read into memory, it re-yields slices of it with iter_slices instead of reading the raw stream again.",['src/requests/models.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,1.0,0.7535648068794201,0.8041666666465626,0.0,0.22,gpt-4o-mini,headers,
+r19,How does requests encode a json= payload?,"In **docs/user/quickstart.rst**, lines 286-296, it explains that when you pass a dictionary to the `json=` parameter in `requests.post()`, Requests automatically encodes the dictionary to a JSON string **and** sets the `Content-Type` header to `application/json`.
+
+Specifically:
+- You do **not** need to call `json.dumps()` yourself.
+- Requests handles JSON encoding internally.
+- The `Content-Type: application/json` header is added automatically.
+
+Example from the docs:
+```python
+url = 'https://api.github.com/some/endpoint'
+payload = {'some': 'data'}
+r = requests.post(url, json=payload)  # Automatically JSON-encoded with proper header
+```
+
+So, **requests encodes a `json=` payload by internally converting the dict to a JSON string and setting the `Content-Type` header to `application/json` automatically.**",822,"['docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'src/requests/__init__.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'README.md', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'README.md', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'tests/test_requests.py', 'src/requests/models.py', 'docs/index.rst', 'docs/user/advanced.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst']",1.611,explain,"PreparedRequest.prepare_body in src/requests/models.py: when no data is given and json is not None, it sets Content-Type to application/json and serializes with complexjson.dumps(json, allow_nan=False), raising InvalidJSONError on ValueError (e.g. NaN), then encodes the result to UTF-8 bytes.",['src/requests/models.py'],0.0,0.0,0.0,0.0,docs,1.0,0.8,0.0,0.5,0.6363636363636364,0.7460629447150717,0.3333333333,0.0,0.31,gpt-4o-mini,headers,
+r20,How does requests send a streaming body like a generator or file?,"Requests sends a streaming body by accepting a file-like object or a generator/iterator as the `data` parameter in the request. This is shown in the `docs/user/advanced.rst` file:
+
+- For a file-like object (streamed upload):
+  ```python
+  with open('massive-body', 'rb') as f:
+      requests.post('http://some.url/streamed', data=f)
+  ```
+
+- For a generator (chunked transfer encoding):
+  ```python
+  def gen():
+      yield 'hi'
+      yield 'there'
+
+  requests.post('http://some.url/chunked', data=gen())
+  ```
+
+Internally, in `src/requests/models.py` within the `PreparedRequest.prepare_body` function, streaming bodies cannot be combined with `files` (multipart uploads), as indicated by the check:
+```python
+if files:
+    raise NotImplementedError(
+        ""Streamed bodies and files are mutually exclusive.""
+    )
+```
+
+Thus, requests sends streaming bodies by passing a file-like object or generator as `data`, which it then streams directly in the request body without loading the entire content into memory.",563,"['docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/models.py', 'docs/user/advanced.rst', 'docs/index.rst', 'tests/test_requests.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/adapters.py', 'src/requests/api.py', 'src/requests/models.py']",2.042,explain,"In PreparedRequest.prepare_body (src/requests/models.py), iterable data that isn't a string, list, tuple or mapping is treated as a stream: it uses super_len to set Content-Length if the length is known, otherwise it sets Transfer-Encoding: chunked. It records the body position with tell() for rewinding, and raises NotImplementedError if files are also given.",['src/requests/models.py'],0.0,1.0,0.3333333333333333,1.0,docs,1.0,0.8,1.0,1.0,1.0,0.831717652466164,0.9999999999666667,1.0,0.67,gpt-4o-mini,headers,
+r21,What error do you get for a URL without a scheme like 'example.com/path'?,"The error raised is `MissingSchema`.
+
+Specifically, in **`src/requests/models.py`**, inside the function **`PreparedRequest.prepare_url`** (lines 431-444), if the URL has no scheme, it raises:
+
+```python
+raise MissingSchema(
+    f""Invalid URL {url!r}: No scheme supplied. ""
+    f""Perhaps you meant https://{url}?""
+)
+```
+
+So for a URL like `'example.com/path'` without a scheme, you get a `MissingSchema` error with a message suggesting to add a scheme.",621,"['src/requests/utils.py', 'src/requests/utils.py', 'src/requests/models.py', 'src/requests/utils.py', 'src/requests/sessions.py', 'src/requests/models.py', 'tests/test_requests.py', 'src/requests/exceptions.py', 'HISTORY.md', 'tests/test_requests.py', 'tests/test_utils.py', 'src/requests/sessions.py', 'src/requests/models.py', 'src/requests/adapters.py', 'src/requests/utils.py', 'tests/test_requests.py', 'src/requests/models.py', 'src/requests/models.py', 'HISTORY.md', 'tests/test_requests.py']",1.421,explain,"PreparedRequest.prepare_url in src/requests/models.py raises MissingSchema(""Invalid URL 'example.com/path': No scheme supplied. Perhaps you meant https://example.com/path?""). A URL with no host raises InvalidURL.",['src/requests/models.py'],0.0,1.0,0.3333333333333333,1.0,code,0.0,0.0,0.0,0.3333333333333333,0.8,0.8239007921967972,0.36666666664833336,1.0,0.8,gpt-4o-mini,headers,
+r22,How are query params from params= combined with a query string already in the URL?,"In the file **src/requests/models.py**, inside the function **PreparedRequest.prepare_url** (lines 473-484), query parameters from `params=` are first encoded (`enc_params = self._encode_params(params)`). If the original URL already contains a query string (`query`), the encoded params are appended with an ampersand (`query = f""{query}&{enc_params}""`). Otherwise, the encoded params become the query string. This combined query string is then used to reconstruct the full URL.",758,"['docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'README.md', 'src/requests/api.py', 'tests/test_requests.py', 'docs/user/quickstart.rst', 'tests/test_requests.py', 'tests/test_requests.py', 'src/requests/sessions.py', 'HISTORY.md', 'src/requests/models.py', 'docs/index.rst', 'src/requests/utils.py', 'docs/user/advanced.rst', 'src/requests/utils.py', 'src/requests/models.py', 'docs/user/advanced.rst', 'tests/test_requests.py', 'src/requests/sessions.py']",1.541,explain,"PreparedRequest.prepare_url in src/requests/models.py encodes params with _encode_params and appends them to the existing query with '&' (or uses them as the query if none exists), then rebuilds the URL with urlunparse and requote_uri.",['src/requests/models.py'],0.0,1.0,0.3333333333333333,1.0,docs,1.0,0.6,1.0,1.0,1.0,0.7199418056510763,0.3333333333,1.0,0.55,gpt-4o-mini,headers,
+r23,"What happens when you pass auth=('user', 'pass') as a tuple?","When you pass `auth=('user', 'pass')` as a tuple (e.g., in `requests.get()` or assigned to `Session.auth`):
+
+- In **`src/requests/models.py`**, function **`PreparedRequest.prepare_auth`** converts this tuple into an `HTTPBasicAuth` instance:
+  ```python
+  if isinstance(auth, tuple) and len(auth) == 2:
+      auth = HTTPBasicAuth(*auth)
+  ```
+- This means the tuple is treated as basic HTTP authentication credentials (username and password).
+- The request then uses HTTP Basic Auth with those credentials.
+
+In short: passing `auth=('user', 'pass')` is a shorthand that triggers HTTP Basic Authentication with username `'user'` and password `'pass'`.",740,"['docs/user/authentication.rst', 'src/requests/utils.py', 'src/requests/models.py', 'docs/user/advanced.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'docs/user/authentication.rst', 'tests/test_requests.py', 'docs/user/authentication.rst', 'src/requests/auth.py', 'docs/user/authentication.rst', 'tests/test_requests.py', 'src/requests/auth.py', 'docs/user/authentication.rst', 'tests/test_utils.py', 'src/requests/auth.py', 'src/requests/auth.py', 'src/requests/sessions.py', 'src/requests/models.py', 'src/requests/utils.py']",1.582,explain,"PreparedRequest.prepare_auth in src/requests/models.py wraps a 2-tuple in HTTPBasicAuth, then calls it on the request. HTTPBasicAuth.__call__ in src/requests/auth.py sets the Authorization header to _basic_auth_str(username, password): 'Basic ' + base64 of 'user:pass' encoded as latin1. If no auth is given, credentials embedded in the URL are used.","['src/requests/models.py', 'src/requests/auth.py']",0.0,1.0,0.3333333333333333,0.5,docs,1.0,0.4,0.0,0.5,1.0,0.836219661911746,0.999999999975,0.3333333333333333,0.62,gpt-4o-mini,headers,
+r24,How does HTTPDigestAuth handle a 401 challenge?,"In `src/requests/auth.py`, within the `HTTPDigestAuth.handle_401` function (lines 245-252), the method first checks if the response status code is a 4xx error. If it is not a 4xx, it resets the internal `num_401_calls` counter to 1 and returns the response without attempting authentication. This implies that `handle_401` only proceeds with digest authentication when a 401 (or other 4xx) response is received, otherwise it does not retry auth.
+
+So, **HTTPDigestAuth.handle_401 handles a 401 challenge by attempting digest authentication only if the response status code is in the 4xx range; otherwise, it resets the retry counter and returns the response as-is.**",734,"['src/requests/auth.py', 'docs/user/authentication.rst', 'src/requests/auth.py', 'tests/test_lowlevel.py', 'HISTORY.md', 'src/requests/auth.py', 'src/requests/auth.py', 'src/requests/auth.py', 'tests/test_lowlevel.py', 'tests/test_lowlevel.py', 'tests/test_lowlevel.py', 'tests/test_lowlevel.py', 'src/requests/auth.py', 'src/requests/auth.py', 'docs/user/advanced.rst', 'tests/test_requests.py', 'tests/test_lowlevel.py', 'docs/user/advanced.rst', 'docs/user/authentication.rst', 'HISTORY.md']",2.83,explain,"HTTPDigestAuth in src/requests/auth.py registers handle_401 as a response hook. On a 4xx response with a 'digest' WWW-Authenticate header (and fewer than 2 attempts), it parses the challenge, rewinds the body, copies the request, builds the Authorization header with build_digest_header, resends it on the same connection and appends the original response to the history.",['src/requests/auth.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,1.0,0.881735390929231,0.8055555555287036,0.0,0.13,gpt-4o-mini,headers,
+r25,Where does requests read credentials from .netrc and when is it used?,"Requests reads credentials from the `.netrc` file located at `~/.netrc`, `~/_netrc`, or a path specified by the `NETRC` environment variable (see `src/requests/utils.py` in `get_netrc_auth` function).
+
+It uses these credentials automatically when no explicit `auth` argument is provided in the request. The `.netrc` credentials override raw HTTP Authorization headers set via `headers=`, but are themselves overridden by the `auth=` parameter (see `docs/user/quickstart.rst` lines 221-226 and `docs/user/authentication.rst` lines 36-48).",659,"['docs/user/quickstart.rst', 'docs/user/authentication.rst', 'docs/user/authentication.rst', 'docs/user/authentication.rst', 'src/requests/utils.py', 'docs/index.rst', 'src/requests/utils.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/authentication.rst', 'docs/user/authentication.rst', 'docs/user/advanced.rst', 'src/requests/utils.py', 'docs/user/authentication.rst', 'docs/user/advanced.rst', 'tests/test_requests.py', 'docs/user/advanced.rst', 'docs/user/authentication.rst', 'src/requests/sessions.py', 'docs/user/advanced.rst']",1.647,explain,"get_netrc_auth in src/requests/utils.py reads the file from the NETRC env var or ~/.netrc / ~/_netrc and returns (login, password) for the URL's host. Session.prepare_request in src/requests/sessions.py uses it when trust_env is True and neither the request nor the session has auth; rebuild_auth also reapplies it on redirects.","['src/requests/utils.py', 'src/requests/sessions.py']",0.0,1.0,0.2,0.5,docs,1.0,0.8,1.0,1.0,1.0,0.8686637202383404,0.94999999997625,0.3333333333333333,0.5,gpt-4o-mini,headers,
+r26,How does requests pick which proxy to use for a URL?,"Requests picks a proxy for a URL in the function `select_proxy` in **src/requests/utils.py** (lines 838-861). It does this by:
+
+1. Parsing the URL to get its scheme and hostname.
+2. Constructing a list of proxy keys to check in order:
+   - `scheme://hostname` (e.g., `http://example.com`)
+   - `scheme` (e.g., `http`)
+   - `all://hostname`
+   - `all`
+3. Iterating over these keys and returning the first matching proxy found in the provided `proxies` dictionary.
+4. If no hostname is present in the URL, it falls back to checking just the scheme or `""all""` keys.
+
+This logic ensures that proxies can be specified specifically per scheme and host, per scheme only, or as a global fallback.",657,"['src/requests/utils.py', 'src/requests/adapters.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/utils.py', 'HISTORY.md', 'HISTORY.md', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'docs/user/advanced.rst', 'src/requests/utils.py', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/adapters.py', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/sessions.py', 'src/requests/utils.py']",1.68,explain,"select_proxy in src/requests/utils.py checks the proxies dict in priority order: 'scheme://hostname', 'scheme', 'all://hostname', then 'all', returning the first match. If the URL has no hostname it uses proxies[scheme] or proxies['all'].",['src/requests/utils.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,1.0,0.860912689258751,0.8874999999778125,1.0,0.6,gpt-4o-mini,headers,
+r27,How does the no_proxy setting decide whether to bypass a proxy?,"The `no_proxy` setting decides whether to bypass a proxy in the function `should_bypass_proxies` (file: `src/requests/utils.py`, lines 765-823) as follows:
+
+1. It first obtains the `no_proxy` value either from the argument or from environment variables (`no_proxy` or `NO_PROXY`) via the nested `get_proxy` function.
+
+2. It parses the URL to get the hostname (`parsed.hostname`).
+
+3. If the hostname is `None` (e.g., for file URLs), it returns `True` to bypass proxies.
+
+4. If `no_proxy` is set, it checks if the hostname or hostname with port ends with any entry in the `no_proxy` list (lines 807-811). If a match is found, it returns `True` to bypass the proxy.
+
+5. If no match is found in `no_proxy`, it calls `proxy_bypass(hostname)` (lines 114-123), which checks proxy bypass rules from environment or registry.
+
+6. If `proxy_bypass` returns `True`, it bypasses the proxy; otherwise, it does not.
+
+In summary, the `no_proxy` setting bypasses proxies by matching the request hostname against the `no_proxy` list entries and returning `True` if any match is found.",565,"['src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'HISTORY.md', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'tests/test_utils.py', 'tests/test_utils.py', 'tests/test_utils.py', 'docs/user/advanced.rst', 'HISTORY.md', 'tests/test_utils.py', 'src/requests/sessions.py', 'docs/user/advanced.rst']",2.08,explain,should_bypass_proxies in src/requests/utils.py reads no_proxy (argument or the no_proxy/NO_PROXY env var). For IPv4 hosts it matches CIDR ranges with address_in_network or exact IPs; for hostnames it checks whether the hostname or hostname:port ends with any entry. It also consults the platform's proxy_bypass. URLs without a hostname always bypass.,['src/requests/utils.py'],1.0,1.0,1.0,1.0,code,0.0,0.0,1.0,1.0,1.0,0.834221713273482,0.99999999998,1.0,0.64,gpt-4o-mini,headers,
+r28,Which environment variables control TLS certificate verification?,"The environment variables controlling TLS certificate verification are mentioned in the snippet from **docs/user/advanced.rst** (lines 190-194):
+
+- `REQUESTS_CA_BUNDLE`
+
+This variable specifies a path to a CA bundle for verifying SSL certificates. If set, it affects certificate verification unless you explicitly merge environment settings into your session (see `Session.merge_environment_settings` in **tests/test_requests.py**).
+
+No other environment variables related to TLS verification are mentioned in the provided code.",582,"['docs/user/advanced.rst', 'docs/user/advanced.rst', 'tests/testserver/server.py', 'src/requests/adapters.py', 'tests/test_requests.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'docs/community/recommended.rst', 'tests/testserver/server.py', 'HISTORY.md', 'tests/test_requests.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'tests/test_requests.py', 'src/requests/certs.py', 'src/requests/adapters.py', 'src/requests/adapters.py']",1.257,explain,"Session.merge_environment_settings in src/requests/sessions.py: when trust_env is True and verify is True or None, it uses REQUESTS_CA_BUNDLE or CURL_CA_BUNDLE as the CA bundle path if set. It also merges environment proxies from get_environ_proxies.",['src/requests/sessions.py'],0.0,0.0,0.16666666666666666,0.0,docs,1.0,0.8,0.0,0.5,0.8,0.9064056360106933,0.4499999999775,0.5,0.4,gpt-4o-mini,headers,
+r29,How do response hooks work in requests?,"Response hooks in `requests` work by allowing you to attach callback functions that are called when a response is received from a request.
+
+- **Where to assign hooks:**  
+  You can assign hooks on a per-request basis by passing a dictionary with the key `'response'` and a callback function (or list of functions) to the `hooks` parameter of a request, e.g.:  
+  ```python
+  hooks={'response': print_url}
+  ```  
+  This is shown in **`docs/user/advanced.rst`** around lines 424-442 and 455-471.
+
+- **What the hook receives:**  
+  The callback function receives the `Response` object as its first argument.
+
+- **Multiple hooks:**  
+  You can assign multiple hooks to the `'response'` event by passing a list of functions, e.g.:  
+  ```python
+  hooks={'response': [print_url, record_hook]}
+  ```  
+  Both will be called in order. (docs/user/advanced.rst lines 455-471)
+
+- **Session-level hooks:**  
+  Hooks can also be added to a `Session` instance, which will apply to every request made from that session:  
+  ```python
+  s = requests.Session()
+  s.hooks['response'].append(print_url)
+  s.get('https://httpbin.org/')
+  ```  
+  (docs/user/advanced.rst lines 473-487)
+
+- **Internal handling:**  
+  In **`src/requests/models.py`**, the `PreparedRequest.prepare_hooks` method processes the hooks dictionary, registering each hook function for the corresponding event (only `'response'` is supported currently).
+
+- **Hook system overview:**  
+  The hooks system is defined in **`src/requests/hooks.py`**, where the only supported hook event is `'response'`.
+
+**Summary:**  
+Response hooks are callback functions attached to the `'response'` event that get called with the `Response` object after a request completes. They can be assigned per-request or per-session and support multiple callbacks executed in order.",676,"['docs/user/advanced.rst', 'src/requests/hooks.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/models.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/models.py', 'HISTORY.md', 'src/requests/models.py', 'docs/user/authentication.rst', 'tests/test_requests.py', 'src/requests/hooks.py', 'tests/test_requests.py', 'src/requests/models.py', 'tests/test_requests.py', 'docs/user/quickstart.rst', 'src/requests/models.py', 'docs/user/quickstart.rst']",3.562,explain,"src/requests/hooks.py defines HOOKS = ['response'] and default_hooks. dispatch_hook gets the hook list for the key (wrapping a single callable in a list), calls each hook with the data, and replaces the data with any non-None return value. Session.send calls dispatch_hook('response', ...) on every response.",['src/requests/hooks.py'],0.0,1.0,0.5,1.0,docs,1.0,0.6,1.0,1.0,1.0,0.910735090520849,0.9999999999666667,0.3333333333333333,0.69,gpt-4o-mini,headers,
+r30,Why are response headers case-insensitive?,"Response headers are case-insensitive because the HTTP standard (RFC 7230, section 3.2) defines header field names as case-insensitive. This is explicitly mentioned in the documentation file **docs/user/quickstart.rst** (lines 420-430), which states that HTTP header names can be accessed using any capitalization. The code reflects this by using a **CaseInsensitiveDict** (defined in **src/requests/structures.py**) for response headers (see **Response.__init__** in **src/requests/models.py**, lines 663-669), ensuring header keys are handled without regard to case.",796,"['docs/user/quickstart.rst', 'src/requests/structures.py', 'src/requests/models.py', 'tests/test_requests.py', 'src/requests/structures.py', 'src/requests/models.py', 'src/requests/adapters.py', 'src/requests/structures.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'src/requests/structures.py', 'docs/user/quickstart.rst', 'HISTORY.md', 'docs/api.rst', 'src/requests/utils.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'src/requests/structures.py', 'docs/user/advanced.rst']",1.427,explain,"Headers use CaseInsensitiveDict from src/requests/structures.py, which stores items in an OrderedDict keyed by key.lower() mapping to (original_key, value). Lookups and membership tests are case-insensitive, while iteration returns the case of the last key set.",['src/requests/structures.py'],0.0,1.0,0.5,1.0,docs,1.0,0.4,1.0,1.0,1.0,0.8988159950313975,0.5888888888692593,1.0,0.5,gpt-4o-mini,headers,
+u01,How does requests implement HTTP/2 multiplexing?,The provided code snippets and documentation do not contain any information about how Requests implements HTTP/2 multiplexing.,477,"['docs/user/advanced.rst', 'docs/community/faq.rst', 'docs/index.rst', 'docs/user/advanced.rst', 'README.md', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/index.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/community/faq.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/community/faq.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst']",0.781,unanswerable,requests does not support HTTP/2; the codebase uses urllib3 over HTTP/1.1 and contains no multiplexing implementation.,[],,,,,,,,,,,,,,,,headers,1.0
+u02,How do I use the built-in async/await API in requests?,"The provided code snippets and documentation do not show any built-in async/await API in `requests` itself.
+
+However, the file `docs/community/recommended.rst` (lines 39-45) mentions `Requests-Threads`, which is a Requests session wrapper that returns Twisted's awaitable Deferreds, enabling async/await usage with Requests on Python 3.
+
+Similarly, `docs/user/advanced.rst` (lines 1072-1081) lists `requests-threads`, `grequests`, `requests-futures`, and `httpx` as external projects that combine Requests with async frameworks to provide async capabilities.
+
+**Summary:**
+- The core `requests` library does **not** have a built-in async/await API.
+- To use async/await with Requests, use external libraries like `requests-threads` (https://github.com/requests/requests-threads) or others mentioned in `docs/user/advanced.rst`.
+- No direct example or function in the codebase shows built-in async/await usage.
+
+If you want async/await with Requests, use `requests-threads` or similar third-party wrappers.",910,"['docs/community/recommended.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'docs/_templates/sidebarlogo.html', 'docs/_templates/sidebarintro.html', 'docs/api.rst', 'docs/user/quickstart.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'README.md', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/api.rst', 'src/requests/__init__.py', 'docs/user/quickstart.rst', 'docs/community/recommended.rst', 'docs/index.rst', 'src/requests/models.py', 'docs/user/advanced.rst']",2.282,unanswerable,requests has no async/await API; the codebase is synchronous only.,[],,,,,,,,,,,,,,,,headers,1.0
+u03,How does requests cache responses to disk?,"The provided code snippets and files do not contain any information about how `requests` caches responses to disk. The documentation and code focus on request/response objects, streaming, decoding, and iteration over content, but there is no mention of disk caching behavior.
+
+**Answer:**  
+The codebase and docs shown do not explain or implement caching of responses to disk. Requests does not provide built-in disk caching by default. If caching is needed, it must be implemented externally or via third-party libraries like `requests-cache`.",672,"['docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/community/faq.rst', 'src/requests/models.py', 'docs/index.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'HISTORY.md', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst']",1.28,unanswerable,"requests does not include response caching; that is provided by third-party packages like requests-cache, not this codebase.",[],,,,,,,,,,,,,,,,headers,1.0
+r01,What happens when you call requests.get() without creating a Session?,"When you call `requests.get()` without creating a `Session`, the function `request()` in **src/requests/api.py** is invoked. This function:
+
+- Creates a new `Session` object using a `with` statement (so it is properly closed after use).
+- Calls `session.request()` with the given method and URL.
+- Returns the `Response` object from that call.
+
+So, a temporary `Session` is created, used to send the request, and then closed immediately. This means:
+
+- You get a `Response` object as usual.
+- But you lose session-level state like persistent cookies or connection pooling because the session is discarded right after the request.
+
+This is summarized in **src/requests/api.py**, function `request()` (lines 14-59).",2088,"['src/requests/api.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/api.rst', 'docs/user/advanced.rst', 'src/requests/cookies.py', 'docs/user/advanced.rst', 'src/requests/models.py', 'src/requests/sessions.py', 'docs/index.rst', 'src/requests/sessions.py', 'docs/user/quickstart.rst']",1.811,explain,"requests.get in src/requests/api.py calls request('get', ...), which creates a temporary Session with `with sessions.Session() as session:` and returns session.request(method=method, url=url, **kwargs). The session is closed when the with block exits, so no connection pooling or cookies persist between calls.",['src/requests/api.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,0.46153846153846156,0.947923887279379,0.6999999999766667,1.0,0.8,gpt-4o-mini,small_to_big,
+r02,Walk through what Session.request does to send a request.,"In **`Session.request`** (file: `src/requests/sessions.py`, lines 500-591), the method performs the following steps to send a request:
+
+1. **Create a `Request` object** with the given parameters (method, url, headers, files, data, json, params, auth, cookies, hooks).  
+   - `method` is uppercased.
+   - `data` and `params` default to empty dicts if None.
+
+2. **Prepare the request** by calling `self.prepare_request(req)`, which returns a `PreparedRequest` object.
+
+3. **Merge environment settings** (proxies, stream, verify, cert) for the prepared request URL by calling `self.merge_environment_settings`.
+
+4. **Build `send_kwargs`** dictionary with `timeout` and `allow_redirects` from the method parameters, then update it with the merged environment settings.
+
+5. **Send the prepared request** by calling `self.send(prep, **send_kwargs)`.  
+   - This internally uses the appropriate adapter to perform the actual HTTP request.
+
+6. **Return the `Response` object** received from `self.send`.
+
+In summary, `Session.request` constructs a `Request`, prepares it, merges environment settings, sends it via `Session.send`, and returns the response.",2636,"['src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/api.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'tests/test_requests.py', 'src/requests/sessions.py', 'src/requests/sessions.py']",2.418,multi_file,"Session.request in src/requests/sessions.py builds a Request object, calls prepare_request (merging session headers, params, auth, cookies and hooks into a PreparedRequest), calls merge_environment_settings to merge proxies, stream, verify and cert with environment settings, then calls self.send. send picks the adapter with get_adapter, calls adapter.send, dispatches response hooks, extracts cookies, and follows redirects with resolve_redirects.",['src/requests/sessions.py'],1.0,1.0,1.0,1.0,code,0.0,0.0,1.0,1.0,1.0,0.749397273225816,0.999999999975,1.0,0.64,gpt-4o-mini,small_to_big,
+r03,How are request-level settings merged with session-level settings?,"Request-level settings are merged with session-level settings using the function `merge_setting` in **src/requests/sessions.py** (lines 61-88). This function:
+
+- Returns the request setting if the session setting is `None`.
+- Returns the session setting if the request setting is `None`.
+- If both are dictionaries (mappings), merges them by updating the session dictionary with the request dictionary, with request-level keys overriding session-level keys.
+- Removes any keys set to `None` after merging.
+
+This merging behavior ensures that method-level parameters override session parameters, as also described in **docs/user/advanced.rst** (lines 36-46).",1338,"['src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'docs/api.rst', 'src/requests/sessions.py', 'tests/test_requests.py']",1.633,explain,"merge_setting in src/requests/sessions.py returns the request setting if the session setting is None and vice versa; for non-dict values the request setting wins. For mappings it starts from the session values, updates them with the request values, and then removes any keys whose value is None, so a request can unset a session header by passing None.",['src/requests/sessions.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,1.0,0.9067818180105306,0.8041666666465626,1.0,0.53,gpt-4o-mini,small_to_big,
+r04,What default headers does a new Session send?,"The code snippets do not explicitly list the default headers a new `Session` sends.
+
+However, from the snippet in **docs/user/advanced.rst** (lines 1086-1090), it suggests that users can customize default headers by setting `Session.headers` to a custom `OrderedDict`. This implies that `Session.headers` holds the default headers.
+
+To find the actual default headers, you would need to look at the initialization of `Session.headers` in the `Session` class (likely in `src/requests/sessions.py`), but this snippet is not provided here.
+
+**Summary:**  
+- The default headers sent by a new `Session` are stored in `Session.headers`.  
+- The provided code does not show what these default headers are by default.  
+- Users can override them by assigning a custom `OrderedDict` to `Session.headers`.",1668,"['docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/api.rst', 'tests/test_requests.py', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'tests/test_requests.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'HISTORY.md', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/cookies.py']",1.651,config,"Session.__init__ sets self.headers = default_headers(). default_headers in src/requests/utils.py returns a CaseInsensitiveDict with User-Agent 'python-requests/<version>', Accept-Encoding (DEFAULT_ACCEPT_ENCODING), Accept '*/*' and Connection 'keep-alive'.","['src/requests/utils.py', 'src/requests/sessions.py']",0.0,1.0,0.5,0.5,docs,1.0,0.4,1.0,1.0,0.7777777777777778,0.0,0.0,0.0,0.6,gpt-4o-mini,small_to_big,
+r05,What is the maximum number of redirects requests will follow by default?,"The default maximum number of redirects Requests will follow is **30**.
+
+This is set in the `Session.__init__` method in **src/requests/sessions.py** (lines 390-449), where:
+
+```python
+self.max_redirects = DEFAULT_REDIRECT_LIMIT
+```
+
+and `DEFAULT_REDIRECT_LIMIT` is defined as 30 in **src/requests/models.py** (lines 1-81):
+
+```python
+DEFAULT_REDIRECT_LIMIT = 30
+```",1696,"['docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'tests/test_requests.py', 'src/requests/models.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'tests/test_requests.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'tests/test_requests.py', 'HISTORY.md', 'tests/test_requests.py', 'HISTORY.md', 'src/requests/sessions.py', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'tests/test_requests.py', 'HISTORY.md', 'src/requests/auth.py']",1.073,config,"DEFAULT_REDIRECT_LIMIT = 30 in src/requests/models.py; Session.max_redirects defaults to it, and resolve_redirects in src/requests/sessions.py raises TooManyRedirects when the history length reaches max_redirects.","['src/requests/models.py', 'src/requests/sessions.py']",0.0,1.0,0.25,1.0,docs,1.0,0.6,1.0,1.0,1.0,0.9300934664278308,0.6999999999766667,1.0,0.44,gpt-4o-mini,small_to_big,
+r06,When does requests strip the Authorization header during a redirect?,"In **src/requests/sessions.py**, within the **SessionRedirectMixin.rebuild_auth** function (lines 282-300), Requests strips the `Authorization` header during a redirect if the helper method **should_strip_auth** (lines 127-157) returns `True`.
+
+Specifically, **should_strip_auth** returns `True` and causes stripping when:
+
+- The redirect is to a different hostname (`old_parsed.hostname != new_parsed.hostname`).
+- Or when the scheme or port changes in a way that is not considered safe (e.g., not just http→https on standard ports or default port equivalences).
+
+Thus, Requests strips the `Authorization` header on redirects to a different host or when the scheme/port changes incompatibly, to avoid leaking credentials to unintended destinations.",941,"['src/requests/sessions.py', 'HISTORY.md', 'HISTORY.md', 'src/requests/sessions.py', 'tests/test_requests.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'HISTORY.md', 'docs/user/quickstart.rst', 'src/requests/auth.py', 'src/requests/sessions.py', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'HISTORY.md', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'tests/test_requests.py', 'HISTORY.md', 'src/requests/sessions.py', 'tests/test_requests.py']",1.619,explain,"SessionRedirectMixin.rebuild_auth in src/requests/sessions.py deletes the Authorization header if should_strip_auth(old_url, new_url) is True. should_strip_auth returns True when the hostname changes, or when the scheme or port changes, except for an http->https upgrade on standard ports (80->443) and default-port changes on the same scheme. If trust_env is set, netrc credentials for the new URL are re-applied.",['src/requests/sessions.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,0.75,0.9165003670963713,0.99999999998,1.0,0.6,gpt-4o-mini,small_to_big,
+r07,How does requests change the HTTP method when following a redirect?,"In **src/requests/sessions.py**, the method **SessionRedirectMixin.rebuild_method** (lines 333-353) changes the HTTP method when following a redirect as follows:
+
+- If the response status is **303 See Other** and the original method is not HEAD, it changes the method to **GET**.
+- If the response status is **302 Found** and the original method is not HEAD, it changes the method to **GET** (browser-like behavior).
+- If the response status is **301 Moved Permanently** and the original method is **POST**, it changes the method to **GET**.
+
+This logic ensures compatibility with HTTP specs and common browser behavior during redirects.",845,"['src/requests/sessions.py', 'HISTORY.md', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'tests/test_requests.py', 'src/requests/api.py', 'docs/user/advanced.rst', 'tests/test_requests.py', 'docs/user/quickstart.rst', 'HISTORY.md', 'src/requests/sessions.py', 'tests/test_requests.py', 'HISTORY.md', 'tests/test_requests.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'tests/test_requests.py', 'tests/test_requests.py']",1.487,explain,"SessionRedirectMixin.rebuild_method in src/requests/sessions.py turns the method into GET for a 303 See Other (unless HEAD), for a 302 Found (unless HEAD, mimicking browsers), and for a POST answered with a 301 Moved Permanently.",['src/requests/sessions.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,0.6,0.7213294414162313,0.4166666666458333,1.0,0.89,gpt-4o-mini,small_to_big,
+r08,How does a Session decide which transport adapter handles a URL?,"The decision happens in the `get_adapter` method of the `Session` class (`src/requests/sessions.py`, lines 781-792). It iterates over all mounted adapters (`self.adapters.items()`), and returns the first adapter whose prefix matches the start of the URL (case-insensitive). If no prefix matches, it raises an `InvalidSchema` error.",450,"['docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/adapters.py', 'src/requests/sessions.py', 'src/requests/sessions.py', 'tests/test_requests.py', 'src/requests/adapters.py', 'src/requests/sessions.py', 'src/requests/adapters.py', 'src/requests/sessions.py', 'src/requests/adapters.py', 'docs/user/advanced.rst']",1.144,explain,"Session.get_adapter in src/requests/sessions.py iterates self.adapters and returns the first adapter whose prefix matches the lowercase URL; if none match it raises InvalidSchema('No connection adapters were found for ...'). Session.mount keeps adapters ordered by descending prefix length, so the most specific prefix wins. By default HTTPAdapter is mounted for 'https://' and 'http://'.",['src/requests/sessions.py'],0.0,1.0,0.2,1.0,docs,1.0,0.6,0.0,0.5,1.0,0.752716618589042,0.94999999997625,1.0,0.62,gpt-4o-mini,small_to_big,
+r09,Does requests retry failed connections by default?,"Requests does not retry failed connections by default.
+
+This is stated in the file **src/requests/adapters.py**, in the **HTTPAdapter** class docstring (lines 168-200):
+
+> ""By default, Requests does not retry failed connections. If you need granular control over the conditions under which we retry a request, import urllib3's `Retry` class and pass that instead.""
+
+Also confirmed in **docs/user/advanced.rst** (lines 1035-1045) where it shows how to implement automatic retries explicitly using `urllib3.util.Retry`.
+
+**Summary:** No, Requests does not retry failed connections by default; retries must be explicitly configured.",908,"['docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/adapters.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'HISTORY.md', 'docs/community/recommended.rst', 'HISTORY.md', 'HISTORY.md', 'src/requests/exceptions.py', 'tests/test_requests.py', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'docs/index.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'src/requests/adapters.py', 'src/requests/sessions.py']",1.376,explain,"No. In HTTPAdapter.__init__ (src/requests/adapters.py) DEFAULT_RETRIES is 0, which becomes Retry(0, read=False). Passing max_retries uses Retry.from_int, and it only applies to failed DNS lookups, socket connections and connection timeouts, never to requests where data reached the server.",['src/requests/adapters.py'],0.0,1.0,0.5,1.0,docs,1.0,0.6,1.0,1.0,0.6,0.8996712874882468,0.99999999995,0.0,0.43,gpt-4o-mini,small_to_big,
+r10,What is the default connection pool size of HTTPAdapter?,"The default connection pool size is not explicitly shown in the provided snippets.
+
+However, in the `HTTPAdapter.init_poolmanager` method (file: `src/requests/adapters.py`, lines 240-264), the parameters `connections` and `maxsize` are passed to `PoolManager` as `num_pools=connections` and `maxsize=maxsize`.
+
+The default values for these parameters (`pool_connections` and `pool_maxsize`) are mentioned in the class docstring but their actual default numeric values are not shown in the snippets.
+
+**Summary:**  
+- The default connection pool size corresponds to the `pool_connections` parameter (number of connection pools cached).  
+- The default maximum connections per pool corresponds to `pool_maxsize`.  
+- The exact default numeric values are not present in the provided code snippets.  
+
+You would need to check the class constructor or module-level constants (not included here) to find the actual default numbers.",1243,"['src/requests/adapters.py', 'src/requests/adapters.py', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/adapters.py', 'HISTORY.md', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'HISTORY.md', 'src/requests/adapters.py']",1.792,config,"DEFAULT_POOLSIZE = 10 in src/requests/adapters.py is used for both pool_connections and pool_maxsize, and DEFAULT_POOLBLOCK = False so the pool does not block when full.",['src/requests/adapters.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,0.625,0.0,0.0,0.0,0.27,gpt-4o-mini,small_to_big,
+r11,How is the timeout argument interpreted when sending a request?,"The timeout argument, when sending a request, can be either:
+
+- A single float value: interpreted as both the connect timeout and the read timeout.
+- A tuple of two floats: interpreted as (connect timeout, read timeout).
+
+This is handled in the `send` method of the `HTTPAdapter` class in **src/requests/adapters.py** (lines 613-719). Specifically:
+
+- If `timeout` is a tuple, it is unpacked into `connect` and `read` timeouts.
+- If `timeout` is a single float, it is used for both connect and read timeouts.
+- Internally, these are wrapped into a `TimeoutSauce` object used by urllib3.
+
+From the docs in **docs/user/advanced.rst** (lines 1104-1112) and **docs/user/quickstart.rst** (lines 540-549):
+
+- The read timeout is the number of seconds the client waits between bytes from the server (usually the time before the first byte).
+- The timeout is not a total time limit for the entire response download.
+- If no timeout is specified, requests do not time out.
+
+Summary:  
+**Timeout can be a float or a (connect, read) tuple; the float sets both timeouts equally. The read timeout defines how long to wait between bytes from the server.**",2462,"['docs/user/advanced.rst', 'src/requests/api.py', 'src/requests/adapters.py', 'docs/user/quickstart.rst', 'src/requests/adapters.py', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/exceptions.py', 'docs/user/advanced.rst', 'tests/test_requests.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'tests/test_requests.py', 'tests/test_testserver.py', 'tests/test_requests.py', 'tests/test_requests.py', 'src/requests/adapters.py', 'tests/test_requests.py']",2.259,explain,"HTTPAdapter.send in src/requests/adapters.py: a tuple is unpacked as (connect, read) into a urllib3 Timeout (raising ValueError if it isn't a 2-tuple), an existing urllib3 Timeout is used as is, and any other value (a float or None) is used for both connect and read timeouts.",['src/requests/adapters.py'],0.0,1.0,0.3333333333333333,1.0,docs,1.0,0.4,0.0,0.5,1.0,0.8302536810528633,0.5888888888692593,1.0,0.73,gpt-4o-mini,small_to_big,
+r12,How does requests translate urllib3 errors into its own exceptions?,"Requests translates urllib3 errors into its own exceptions primarily in the `send` method of the `HTTPAdapter` class, located in **`src/requests/adapters.py`**, lines 613-719.
+
+Specifically:
+
+- It wraps calls to `conn.urlopen()` in a try-except block.
+- When urllib3 exceptions like `ProtocolError`, `OSError`, `MaxRetryError`, `ClosedPoolError`, `_ProxyError`, `_SSLError`, `_HTTPError`, `ReadTimeoutError`, and `_InvalidHeader` are caught, Requests raises its own exceptions such as:
+  - `ConnectionError`
+  - `ConnectTimeout`
+  - `RetryError`
+  - `ProxyError`
+  - `SSLError`
+  - `ReadTimeout`
+  - `InvalidHeader`
+  - `InvalidURL` (for `LocationValueError`)
+
+This mapping ensures that users of Requests get consistent, Requests-specific exceptions instead of raw urllib3 errors.
+
+Example from `send` method:
+
+```python
+except (ProtocolError, OSError) as err:
+    raise ConnectionError(err, request=request)
+
+except MaxRetryError as e:
+    if isinstance(e.reason, ConnectTimeoutError):
+        raise ConnectTimeout(e, request=request)
+    if isinstance(e.reason, ResponseError):
+        raise RetryError(e, request=request)
+    if isinstance(e.reason, _ProxyError):
+        raise ProxyError(e, request=request)
+    if isinstance(e.reason, _SSLError):
+        raise SSLError(e, request=request)
+    raise ConnectionError(e, request=request)
+
+except ClosedPoolError as e:
+    raise ConnectionError(e, request=request)
+
+except _ProxyError as e:
+    raise ProxyError(e)
+
+except (_SSLError, _HTTPError) as e:
+    if isinstance(e, _SSLError):
+        raise SSLError(e, request=request)
+    elif isinstance(e, ReadTimeoutError):
+        raise ReadTimeout(e, request=request)
+    elif isinstance(e, _InvalidHeader):
+        raise InvalidHeader(e, request=request)
+    else:
+        raise
+```
+
+Thus, Requests acts as a wrapper layer translating urllib3 exceptions into Requests exceptions for clearer, higher-level error handling.",1766,"['src/requests/exceptions.py', 'docs/user/advanced.rst', 'docs/api.rst', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/__init__.py', 'tests/test_requests.py', 'src/requests/exceptions.py', 'src/requests/exceptions.py', 'src/requests/adapters.py', 'src/requests/adapters.py', 'src/requests/__init__.py', 'tests/test_requests.py', 'src/requests/exceptions.py', 'src/requests/exceptions.py', 'src/requests/adapters.py', 'src/requests/models.py', 'src/requests/sessions.py', 'src/requests/help.py', 'docs/user/advanced.rst']",3.794,explain,"HTTPAdapter.send in src/requests/adapters.py catches urllib3 errors: ProtocolError/OSError become ConnectionError; MaxRetryError becomes ConnectTimeout (for connect timeouts), RetryError (ResponseError), ProxyError, SSLError or ConnectionError depending on the reason; ClosedPoolError becomes ConnectionError; ReadTimeoutError becomes ReadTimeout; urllib3 InvalidHeader becomes InvalidHeader.",['src/requests/adapters.py'],0.0,1.0,0.25,1.0,code,0.0,0.4,0.0,0.5,1.0,0.8753158841559111,0.4166666666458333,1.0,0.8,gpt-4o-mini,small_to_big,
+r13,"If I catch requests.exceptions.Timeout, which errors will I catch?","You will catch all exceptions that inherit from `requests.exceptions.Timeout`.
+
+From the provided code snippets:
+
+- `ConnectTimeout` (in `src/requests/exceptions.py`, lines 80-84) inherits from both `ConnectionError` and `Timeout`.
+- `ReadTimeout` is raised in `src/requests/adapters.py` inside the `send` method when a `_SSLError` or `ReadTimeoutError` occurs.
+- The test file (`tests/test_requests.py`) shows catching `requests.exceptions.Timeout` in `TestTimeout.test_stream_timeout`, which catches `ReadTimeout`.
+
+**Summary:**
+
+Catching `requests.exceptions.Timeout` will catch:
+
+- `ConnectTimeout` (connection timed out)
+- `ReadTimeout` (server did not send data in time)
+
+Both are subclasses of `Timeout` (which itself inherits from `RequestException`).
+
+Other timeout-related exceptions like `Timeout` itself or subclasses thereof will also be caught.
+
+**Direct answer:**
+
+Catching `requests.exceptions.Timeout` will catch connection timeouts (`ConnectTimeout`) and read timeouts (`ReadTimeout`).",1982,"['src/requests/exceptions.py', 'src/requests/adapters.py', 'docs/user/quickstart.rst', 'src/requests/exceptions.py', 'tests/test_requests.py', 'src/requests/api.py', 'tests/test_requests.py', 'src/requests/adapters.py', 'docs/user/quickstart.rst', 'src/requests/adapters.py', 'tests/test_requests.py', 'tests/test_requests.py', 'tests/test_requests.py', 'tests/test_requests.py', 'tests/test_requests.py', 'tests/test_requests.py', 'src/requests/adapters.py', 'docs/api.rst', 'src/requests/adapters.py', 'tests/test_testserver.py']",2.233,explain,"In src/requests/exceptions.py, Timeout is a RequestException; ConnectTimeout subclasses both ConnectionError and Timeout, and ReadTimeout subclasses Timeout, so catching Timeout catches both connect and read timeouts. ConnectTimeout is documented as safe to retry.",['src/requests/exceptions.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,0.75,0.9048153671871567,0.8666666666377778,1.0,0.64,gpt-4o-mini,small_to_big,
+r14,What does Response.raise_for_status do?,"In **src/requests/models.py**, the function **Response.raise_for_status** (lines 997-1024) checks the HTTP response status code. If the status code indicates a client error (400–499) or a server error (500–599), it raises an `HTTPError` exception with a message including the status code, reason, and URL. If the status code is not an error, it does nothing (returns None).",954,"['docs/user/quickstart.rst', 'src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'src/requests/adapters.py', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/models.py', 'tests/test_requests.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/api.rst', 'tests/test_requests.py', 'src/requests/structures.py', 'docs/user/advanced.rst']",1.321,explain,"Response.raise_for_status in src/requests/models.py decodes the reason (utf-8, falling back to iso-8859-1) and raises HTTPError with a message like '404 Client Error: <reason> for url: <url>' for 400-499 statuses or '5xx Server Error: ...' for 500-599. Otherwise it does nothing.",['src/requests/models.py'],0.0,1.0,0.5,1.0,docs,1.0,0.6,1.0,1.0,1.0,0.8531576850250556,0.32499999998375,0.6666666666666666,0.6,gpt-4o-mini,small_to_big,
+r15,Is response.ok the same as checking for status 200?,"No, `response.ok` is not the same as checking for status 200.
+
+- In **src/requests/models.py**, function `Response.ok` (lines 754-767), `response.ok` returns `True` if the status code is less than 400 (i.e., any status code from 200 up to but not including 400), and `False` otherwise.
+- The docstring explicitly states it is **not** a check for status code 200 specifically.
+- This means `response.ok` is `True` for all successful and redirection responses (2xx and 3xx), not just 200.
+
+Therefore, `response.ok` means ""status code < 400,"" not ""status code == 200"".",707,"['src/requests/models.py', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'tests/test_testserver.py', '.github/SECURITY.md', 'src/requests/status_codes.py', 'docs/community/vulnerabilities.rst', 'tests/test_requests.py', 'src/requests/models.py', 'tests/test_lowlevel.py', 'tests/test_lowlevel.py', 'tests/test_lowlevel.py', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'HISTORY.md', 'HISTORY.md', 'src/requests/api.py']",1.633,explain,"No. Response.ok in src/requests/models.py calls raise_for_status and returns False if HTTPError is raised, True otherwise, so any status below 400 (including 3xx) is ok.",['src/requests/models.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,0.8571428571428571,0.9174783390685675,0.8041666666465626,0.0,0.8,gpt-4o-mini,small_to_big,
+r16,How does response.text decide which encoding to use?,"The logic for deciding the encoding used by `response.text` is in the `text` property of the `Response` class in **src/requests/models.py**, lines 909-945:
+
+1. It first tries to use `self.encoding`, which is typically set from the HTTP headers.
+2. If `self.encoding` is `None`, it falls back to `self.apparent_encoding`, which is an auto-detected encoding guessed using `charset_normalizer` or `chardet`.
+3. If decoding with the chosen encoding fails (due to a `LookupError` or `TypeError`), it falls back to decoding the content blindly with replacement errors.
+
+Additional context from the docs (docs/user/quickstart.rst and docs/user/advanced.rst) confirms:
+- Encoding is guessed from HTTP headers first.
+- If no encoding is specified in headers, Requests uses `charset_normalizer` or `chardet` to guess.
+- If the `Content-Type` header contains `text` but no charset, Requests defaults to `ISO-8859-1` per RFC 2616.
+- You can override the encoding by setting `r.encoding` before accessing `r.text`.
+
+**Summary:**  
+`response.text` uses `response.encoding` (from HTTP headers or manually set). If `encoding` is `None`, it uses an auto-detected encoding (`apparent_encoding`). If decoding fails, it falls back to a safe decode with replacement.",856,"['src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/models.py', 'HISTORY.md', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'HISTORY.md', 'src/requests/models.py', 'src/requests/utils.py', 'docs/user/quickstart.rst', 'docs/community/faq.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'src/requests/utils.py', 'src/requests/utils.py']",2.374,explain,"Response.text in src/requests/models.py uses response.encoding; if it is None it falls back to apparent_encoding (detected with charset_normalizer or chardet). It decodes with errors='replace' and falls back to the default codec on LookupError/TypeError. The encoding comes from get_encoding_from_headers in src/requests/utils.py: the charset parameter, else ISO-8859-1 for text/* content types, else utf-8 for application/json.","['src/requests/models.py', 'src/requests/utils.py']",1.0,1.0,1.0,0.5,code,0.0,0.8,1.0,1.0,1.0,0.8825220226457859,0.99999999998,0.6666666666666666,0.53,gpt-4o-mini,small_to_big,
+r17,How does response.json() handle the encoding of the body?,"The method `json()` in **src/requests/models.py**, lines 947-978, handles encoding as follows:
+
+- If `self.encoding` is not set and the response content length is > 3 bytes, it tries to guess the JSON encoding using `guess_json_utf(self.content)` (per JSON RFC 4627, expecting UTF-8, UTF-16, or UTF-32).
+- If an encoding is detected, it attempts to decode `self.content` with that encoding and then parse JSON.
+- If decoding fails with `UnicodeDecodeError`, it falls back to parsing `self.text`.
+- If no encoding is detected or the above fails, it parses JSON from `self.text`.
+- `self.text` (defined in lines 909-945) decodes `self.content` using `self.encoding` if set, otherwise falls back to `self.apparent_encoding` (auto-detected via charset detection libraries).
+- JSON decode errors are caught and re-raised as `RequestsJSONDecodeError`.
+
+In summary, `response.json()` first tries to detect and decode the raw bytes with a JSON-specific UTF encoding guess, then falls back to the decoded unicode text using the response encoding or apparent encoding before loading JSON.",1602,"['src/requests/models.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'HISTORY.md', 'src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst']",2.336,explain,"Response.json in src/requests/models.py: if no encoding is set and the content is longer than 3 bytes, it guesses the UTF encoding with guess_json_utf and tries to decode with it. Otherwise it parses self.text. JSON parse errors are re-raised as requests.exceptions.JSONDecodeError.",['src/requests/models.py'],1.0,1.0,1.0,1.0,code,0.0,0.2,1.0,1.0,1.0,0.7256015164365218,0.999999999975,1.0,0.37,gpt-4o-mini,small_to_big,
+r18,What happens if you read a streamed response's content twice with iter_content?,"If you read a streamed response's content twice with `iter_content` (in `src/requests/models.py`, function `Response.iter_content`), the second call will raise a `StreamConsumedError`.
+
+Specifically, the code checks:
+```python
+if self._content_consumed and isinstance(self._content, bool):
+    raise StreamConsumedError()
+```
+This prevents re-reading the streamed content once it has been consumed.",1088,"['src/requests/models.py', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'src/requests/models.py', 'HISTORY.md', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/models.py', 'src/requests/utils.py', 'src/requests/models.py', 'HISTORY.md', 'tests/test_requests.py', 'docs/user/advanced.rst']",1.232,explain,"Response.iter_content in src/requests/models.py raises StreamConsumedError if the content was already consumed and was not stored (self._content is still a bool). If the content was read into memory, it re-yields slices of it with iter_slices instead of reading the raw stream again.",['src/requests/models.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,1.0,0.9522913785633967,0.8041666666465626,1.0,0.5,gpt-4o-mini,small_to_big,
+r19,How does requests encode a json= payload?,"In the file **docs/user/quickstart.rst**, lines 286-296, it explains that when you pass a dictionary to the `json` parameter in `requests.post()`, Requests automatically encodes the dictionary to a JSON string and sets the `Content-Type` header to `application/json`.
+
+Specifically:
+- Using `data=json.dumps(payload)` sends the JSON string but **does NOT** set the `Content-Type` header.
+- Using `json=payload` (added in version 2.4.2) automatically encodes the dictionary to JSON **and** sets the `Content-Type` header to `application/json`.
+
+So, Requests encodes a `json=` payload by:
+1. Serializing the dictionary to a JSON string internally.
+2. Setting the `Content-Type` header to `application/json`.
+
+This behavior is documented in **docs/user/quickstart.rst**, lines 276-296.",1028,"['docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'src/requests/__init__.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'README.md', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'README.md', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'tests/test_requests.py', 'src/requests/models.py', 'docs/index.rst', 'docs/user/advanced.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'docs/user/quickstart.rst']",1.79,explain,"PreparedRequest.prepare_body in src/requests/models.py: when no data is given and json is not None, it sets Content-Type to application/json and serializes with complexjson.dumps(json, allow_nan=False), raising InvalidJSONError on ValueError (e.g. NaN), then encodes the result to UTF-8 bytes.",['src/requests/models.py'],0.0,0.0,0.0,0.0,docs,1.0,0.8,0.0,0.5,0.6666666666666666,0.7299438337562151,0.3333333333,0.0,0.38,gpt-4o-mini,small_to_big,
+r20,How does requests send a streaming body like a generator or file?,"Requests sends a streaming body (like a generator or file) in the function `prepare_body` in the file `src/requests/models.py`.
+
+Specifically:
+- It detects if `data` is an iterable but not a string, list, tuple, or mapping (`is_stream` check).
+- If streaming, it sets `body = data` directly.
+- It tries to determine the length of the stream; if length is unknown, it sets the header `""Transfer-Encoding"": ""chunked""`.
+- If the body is a file-like object, it records the current file position to allow rewinding on redirects.
+- It raises an error if both streaming body and files are provided (they are mutually exclusive).
+
+This allows Requests to send large streams or generators without loading them fully into memory, using chunked transfer encoding if the length is unknown.
+
+This matches the usage shown in the docs (`docs/user/advanced.rst` lines 350-357 and 369-379) where a file-like object or generator is passed as `data` to `requests.post()`.",1140,"['docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/models.py', 'docs/user/advanced.rst', 'docs/index.rst', 'tests/test_requests.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/adapters.py', 'src/requests/api.py', 'src/requests/models.py']",1.771,explain,"In PreparedRequest.prepare_body (src/requests/models.py), iterable data that isn't a string, list, tuple or mapping is treated as a stream: it uses super_len to set Content-Length if the length is known, otherwise it sets Transfer-Encoding: chunked. It records the body position with tell() for rewinding, and raises NotImplementedError if files are also given.",['src/requests/models.py'],0.0,1.0,0.3333333333333333,1.0,docs,1.0,0.8,1.0,1.0,1.0,0.8075282068325524,0.94999999997625,1.0,0.7,gpt-4o-mini,small_to_big,
+r21,What error do you get for a URL without a scheme like 'example.com/path'?,"The error raised is `MissingSchema`.
+
+Specifically, in **`src/requests/models.py`** inside the function **`PreparedRequest.prepare_url`** (lines 409-481), if the parsed URL has no scheme, it raises:
+
+```python
+raise MissingSchema(
+    f""Invalid URL {url!r}: No scheme supplied. ""
+    f""Perhaps you meant https://{url}?""
+)
+```
+
+`MissingSchema` is defined in **`src/requests/exceptions.py`** as an exception indicating the URL scheme is missing.",2611,"['src/requests/utils.py', 'src/requests/utils.py', 'src/requests/models.py', 'src/requests/utils.py', 'src/requests/sessions.py', 'src/requests/models.py', 'tests/test_requests.py', 'src/requests/exceptions.py', 'HISTORY.md', 'tests/test_requests.py', 'tests/test_utils.py', 'src/requests/sessions.py', 'src/requests/models.py', 'src/requests/adapters.py', 'src/requests/utils.py', 'tests/test_requests.py', 'src/requests/models.py', 'src/requests/models.py', 'HISTORY.md', 'tests/test_requests.py']",1.272,explain,"PreparedRequest.prepare_url in src/requests/models.py raises MissingSchema(""Invalid URL 'example.com/path': No scheme supplied. Perhaps you meant https://example.com/path?""). A URL with no host raises InvalidURL.",['src/requests/models.py'],0.0,1.0,0.3333333333333333,1.0,code,0.0,0.0,0.0,0.3333333333333333,1.0,0.7955972423506128,0.8874999999778125,1.0,0.67,gpt-4o-mini,small_to_big,
+r22,How are query params from params= combined with a query string already in the URL?,"In **src/requests/models.py**, function **PreparedRequest.prepare_url**:
+
+- The existing query string from the URL is parsed out (`query`).
+- The `params` argument is encoded into `enc_params`.
+- If both exist, they are combined with an ampersand: `query = f""{query}&{enc_params}""`.
+- Otherwise, `query` is set to `enc_params`.
+- The final URL is reconstructed with the combined query string.
+
+So, query params from `params=` are appended to the existing URL query string, separated by `&`.",1345,"['docs/user/quickstart.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'README.md', 'src/requests/api.py', 'tests/test_requests.py', 'docs/user/quickstart.rst', 'tests/test_requests.py', 'tests/test_requests.py', 'src/requests/sessions.py', 'HISTORY.md', 'src/requests/models.py', 'docs/index.rst', 'src/requests/utils.py', 'docs/user/advanced.rst', 'src/requests/utils.py', 'src/requests/models.py', 'docs/user/advanced.rst', 'tests/test_requests.py', 'src/requests/sessions.py']",1.472,explain,"PreparedRequest.prepare_url in src/requests/models.py encodes params with _encode_params and appends them to the existing query with '&' (or uses them as the query if none exists), then rebuilds the URL with urlunparse and requote_uri.",['src/requests/models.py'],0.0,1.0,0.3333333333333333,1.0,docs,1.0,0.6,1.0,1.0,1.0,0.7551698506131874,0.3333333333,1.0,0.5,gpt-4o-mini,small_to_big,
+r23,"What happens when you pass auth=('user', 'pass') as a tuple?","When you pass `auth=('user', 'pass')` as a tuple:
+
+- In **`src/requests/models.py`**, inside the `PreparedRequest.prepare_auth` method, the tuple is detected (`isinstance(auth, tuple) and len(auth) == 2`).
+- It is then converted into an `HTTPBasicAuth` object: `auth = HTTPBasicAuth(*auth)`.
+- This `HTTPBasicAuth` instance is called with the request (`r = auth(self)`), which modifies the request to include the appropriate Basic Authentication headers.
+- The request object is updated with these changes.
+
+In short, passing `auth=('user', 'pass')` is a shortcut that automatically applies HTTP Basic Authentication using those credentials. This is confirmed by the docs snippet in **`docs/user/authentication.rst`** showing that passing a tuple is equivalent to using `HTTPBasicAuth`.",1517,"['docs/user/authentication.rst', 'src/requests/utils.py', 'src/requests/models.py', 'docs/user/advanced.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'docs/user/authentication.rst', 'tests/test_requests.py', 'docs/user/authentication.rst', 'src/requests/auth.py', 'docs/user/authentication.rst', 'tests/test_requests.py', 'src/requests/auth.py', 'docs/user/authentication.rst', 'tests/test_utils.py', 'src/requests/auth.py', 'src/requests/auth.py', 'src/requests/sessions.py', 'src/requests/models.py', 'src/requests/utils.py']",2.188,explain,"PreparedRequest.prepare_auth in src/requests/models.py wraps a 2-tuple in HTTPBasicAuth, then calls it on the request. HTTPBasicAuth.__call__ in src/requests/auth.py sets the Authorization header to _basic_auth_str(username, password): 'Basic ' + base64 of 'user:pass' encoded as latin1. If no auth is given, credentials embedded in the URL are used.","['src/requests/models.py', 'src/requests/auth.py']",0.0,1.0,0.3333333333333333,0.5,docs,1.0,0.4,0.0,0.5,1.0,0.8967798313423478,0.99999999998,1.0,0.43,gpt-4o-mini,small_to_big,
+r24,How does HTTPDigestAuth handle a 401 challenge?,"HTTPDigestAuth handles a 401 challenge in the function `handle_401` in `src/requests/auth.py` (lines 241-283):
+
+1. It first checks if the response status code is a 4xx error; if not, it returns the response as is.
+2. If the request body is rewindable, it resets the body position to resend the request.
+3. It looks for a ""www-authenticate"" header containing ""digest"".
+4. If a digest challenge is present and the number of 401 calls is less than 2, it:
+   - Parses the digest challenge header.
+   - Consumes the response content and closes the connection to reuse it.
+   - Copies and prepares the original request, including cookies.
+   - Builds a new ""Authorization"" header using `build_digest_header`.
+   - Sends the new request with the digest authorization header.
+   - Returns the new response.
+5. If conditions are not met, it resets the 401 call count and returns the original response.
+
+In summary, `handle_401` detects a digest auth challenge, constructs the appropriate digest authorization header via `build_digest_header`, and resends the request with this header to authenticate.",2715,"['src/requests/auth.py', 'docs/user/authentication.rst', 'src/requests/auth.py', 'tests/test_lowlevel.py', 'HISTORY.md', 'src/requests/auth.py', 'src/requests/auth.py', 'src/requests/auth.py', 'tests/test_lowlevel.py', 'tests/test_lowlevel.py', 'tests/test_lowlevel.py', 'tests/test_lowlevel.py', 'src/requests/auth.py', 'src/requests/auth.py', 'docs/user/advanced.rst', 'tests/test_requests.py', 'tests/test_lowlevel.py', 'docs/user/advanced.rst', 'docs/user/authentication.rst', 'HISTORY.md']",2.493,explain,"HTTPDigestAuth in src/requests/auth.py registers handle_401 as a response hook. On a 4xx response with a 'digest' WWW-Authenticate header (and fewer than 2 attempts), it parses the challenge, rewinds the body, copies the request, builds the Authorization header with build_digest_header, resends it on the same connection and appends the original response to the history.",['src/requests/auth.py'],1.0,1.0,1.0,1.0,code,0.0,0.6,1.0,1.0,1.0,0.918718227630322,0.8055555555287036,0.5,0.76,gpt-4o-mini,small_to_big,
+r25,Where does requests read credentials from .netrc and when is it used?,"Requests reads credentials from the `.netrc` file in the function `get_netrc_auth` located in **src/requests/utils.py** (lines 204-258). It looks for the netrc file at the path specified by the `NETRC` environment variable or defaults to `~/.netrc` or `~/_netrc`.
+
+It is used automatically when no explicit authentication method is provided via the `auth` parameter in a request. Requests attempts to get credentials for the URL's hostname from the `.netrc` file and uses them for HTTP Basic Authentication, overriding any raw `Authorization` headers set with `headers=`.
+
+This behavior is documented in **docs/user/authentication.rst** (lines 36-48) and **docs/user/quickstart.rst** (lines 221-226).",1020,"['docs/user/quickstart.rst', 'docs/user/authentication.rst', 'docs/user/authentication.rst', 'docs/user/authentication.rst', 'src/requests/utils.py', 'docs/index.rst', 'src/requests/utils.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'docs/user/authentication.rst', 'docs/user/authentication.rst', 'docs/user/advanced.rst', 'src/requests/utils.py', 'docs/user/authentication.rst', 'docs/user/advanced.rst', 'tests/test_requests.py', 'docs/user/advanced.rst', 'docs/user/authentication.rst', 'src/requests/sessions.py', 'docs/user/advanced.rst']",1.754,explain,"get_netrc_auth in src/requests/utils.py reads the file from the NETRC env var or ~/.netrc / ~/_netrc and returns (login, password) for the URL's host. Session.prepare_request in src/requests/sessions.py uses it when trust_env is True and neither the request nor the session has auth; rebuild_auth also reapplies it on redirects.","['src/requests/utils.py', 'src/requests/sessions.py']",0.0,1.0,0.2,0.5,docs,1.0,0.8,1.0,1.0,0.8888888888888888,0.8280529271998315,0.94999999997625,0.6666666666666666,0.44,gpt-4o-mini,small_to_big,
+r26,How does requests pick which proxy to use for a URL?,"Requests picks which proxy to use for a URL in the function `select_proxy` located in **src/requests/utils.py** (lines 838-861).
+
+**How it works:**
+
+1. It parses the URL to extract the scheme and hostname.
+2. It tries to find a proxy in the `proxies` dictionary using the following keys in order:
+   - `<scheme>://<hostname>` (e.g., `http://example.com`)
+   - `<scheme>` (e.g., `http`)
+   - `all://<hostname>`
+   - `all`
+3. The first matching key found in the `proxies` dictionary is used as the proxy.
+4. If no hostname is present in the URL, it falls back to `proxies.get(scheme)` or `proxies.get(""all"")`.
+
+This means host-specific proxies (like `http://example.com`) take precedence over scheme-only proxies (`http`), and those take precedence over generic `all` proxies.
+
+This logic is used by `HTTPAdapter.request_url` (in **src/requests/adapters.py**, lines 546-576) to determine if the request should use a proxy and how to format the URL accordingly.",1029,"['src/requests/utils.py', 'src/requests/adapters.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/utils.py', 'HISTORY.md', 'HISTORY.md', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'docs/user/advanced.rst', 'src/requests/utils.py', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/adapters.py', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'src/requests/sessions.py', 'src/requests/utils.py']",2.619,explain,"select_proxy in src/requests/utils.py checks the proxies dict in priority order: 'scheme://hostname', 'scheme', 'all://hostname', then 'all', returning the first match. If the URL has no hostname it uses proxies[scheme] or proxies['all'].",['src/requests/utils.py'],1.0,1.0,1.0,1.0,code,0.0,0.4,1.0,1.0,1.0,0.8268257533665565,0.7499999999625,1.0,0.67,gpt-4o-mini,small_to_big,
+r27,How does the no_proxy setting decide whether to bypass a proxy?,"The `no_proxy` setting in the function `should_bypass_proxies` (in `src/requests/utils.py`, lines 765-823) decides to bypass a proxy based on the following logic:
+
+1. If `no_proxy` is not provided as an argument, it tries to get it from the environment variables `no_proxy` or `NO_PROXY`.
+
+2. It parses the URL to extract the hostname.
+
+3. If the hostname is missing (e.g., for `file://` URLs), it bypasses the proxy (returns `True`).
+
+4. If `no_proxy` is set, it splits the value by commas and iterates over each entry:
+   - If the hostname is an IPv4 address:
+     - It checks if any `no_proxy` entry is a valid CIDR and if the IP falls within that network.
+     - Or if the IP exactly matches any `no_proxy` IP entry.
+   - If the hostname is not an IP:
+     - It checks if the hostname or hostname with port ends with any `no_proxy` entry (matching domain suffixes).
+
+5. If any of these checks match, it returns `True` to bypass the proxy.
+
+6. If no match is found, it calls `proxy_bypass(hostname)` (which may check OS-specific proxy bypass rules) and returns `True` if that indicates bypass.
+
+7. Otherwise, it returns `False` (do not bypass proxy).
+
+In summary, `no_proxy` bypasses proxies for hosts matching IPs, CIDRs, or domain suffixes listed in the `no_proxy` string.",2176,"['src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'HISTORY.md', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'src/requests/utils.py', 'tests/test_utils.py', 'tests/test_utils.py', 'tests/test_utils.py', 'docs/user/advanced.rst', 'HISTORY.md', 'tests/test_utils.py', 'src/requests/sessions.py', 'docs/user/advanced.rst']",2.818,explain,should_bypass_proxies in src/requests/utils.py reads no_proxy (argument or the no_proxy/NO_PROXY env var). For IPv4 hosts it matches CIDR ranges with address_in_network or exact IPs; for hostnames it checks whether the hostname or hostname:port ends with any entry. It also consults the platform's proxy_bypass. URLs without a hostname always bypass.,['src/requests/utils.py'],1.0,1.0,1.0,1.0,code,0.0,0.0,1.0,1.0,1.0,0.849418606673655,0.99999999998,1.0,0.63,gpt-4o-mini,small_to_big,
+r28,Which environment variables control TLS certificate verification?,"The environment variables controlling TLS certificate verification are `REQUESTS_CA_BUNDLE` and `CURL_CA_BUNDLE`.
+
+This is shown in:
+- **File:** `tests/test_requests.py`
+- **Function:** `TestRequests.test_env_cert_bundles`
+
+Also mentioned in the docs snippet (`docs/user/advanced.rst` lines 190-194) that `REQUESTS_CA_BUNDLE` affects SSL certificate verification, especially with prepared requests.",1608,"['docs/user/advanced.rst', 'docs/user/advanced.rst', 'tests/testserver/server.py', 'src/requests/adapters.py', 'tests/test_requests.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'docs/community/recommended.rst', 'tests/testserver/server.py', 'HISTORY.md', 'tests/test_requests.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/adapters.py', 'tests/test_requests.py', 'src/requests/certs.py', 'src/requests/adapters.py', 'src/requests/adapters.py']",1.167,explain,"Session.merge_environment_settings in src/requests/sessions.py: when trust_env is True and verify is True or None, it uses REQUESTS_CA_BUNDLE or CURL_CA_BUNDLE as the CA bundle path if set. It also merges environment proxies from get_environ_proxies.",['src/requests/sessions.py'],0.0,0.0,0.16666666666666666,0.0,docs,1.0,0.8,0.0,0.5,1.0,0.9194972469205643,0.4499999999775,0.5,0.36,gpt-4o-mini,small_to_big,
+r29,How do response hooks work in requests?,"Response hooks in `requests` work by allowing you to attach callback functions that are called with the `Response` object once a request completes.
+
+- You assign hooks via the `hooks` parameter on a per-request basis, e.g. `hooks={'response': callback_function}` (see `docs/user/advanced.rst`, lines 430-440).
+- The callback function receives the `Response` object as its first argument.
+- Multiple hooks can be attached to the same event by passing a list of functions, e.g. `hooks={'response': [func1, func2]}` (see `docs/user/advanced.rst`, lines 455-470).
+- Hooks can also be added to a `Session` instance, and they will be called on every request made by that session (see `docs/user/advanced.rst`, lines 473-485).
+- Internally, hooks are prepared and registered in `PreparedRequest.prepare_hooks` (in `src/requests/models.py`, lines 630-637), which processes the hooks dictionary and registers each callback for the corresponding event.
+
+In summary, response hooks are callback functions triggered with the response object after a request completes, allowing you to manipulate or inspect the response dynamically.",649,"['docs/user/advanced.rst', 'src/requests/hooks.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'src/requests/models.py', 'src/requests/sessions.py', 'docs/user/advanced.rst', 'src/requests/sessions.py', 'src/requests/models.py', 'HISTORY.md', 'src/requests/models.py', 'docs/user/authentication.rst', 'tests/test_requests.py', 'src/requests/hooks.py', 'tests/test_requests.py', 'src/requests/models.py', 'tests/test_requests.py', 'docs/user/quickstart.rst', 'src/requests/models.py', 'docs/user/quickstart.rst']",1.967,explain,"src/requests/hooks.py defines HOOKS = ['response'] and default_hooks. dispatch_hook gets the hook list for the key (wrapping a single callable in a list), calls each hook with the data, and replaces the data with any non-None return value. Session.send calls dispatch_hook('response', ...) on every response.",['src/requests/hooks.py'],0.0,1.0,0.5,1.0,docs,1.0,0.6,1.0,1.0,1.0,0.910735090520849,0.9999999999666667,0.3333333333333333,0.4,gpt-4o-mini,small_to_big,
+r30,Why are response headers case-insensitive?,"Response headers are case-insensitive because HTTP header names are defined as case-insensitive by the HTTP specification (RFC 7230, section 3.2). This is explicitly mentioned in the documentation file `docs/user/quickstart.rst` (lines 420-430), which states that headers can be accessed using any capitalization.
+
+In the code, this behavior is implemented in the `CaseInsensitiveDict` class in `src/requests/structures.py` (lines 13-80). This class stores headers in a way that key lookups are case-insensitive by lowercasing keys internally, while preserving the original case for iteration and representation.
+
+Thus, response headers are case-insensitive to comply with the HTTP standard and are implemented via the `CaseInsensitiveDict` used in the `Response` object (`src/requests/models.py`, `Response.__init__` at lines 658-703).",1560,"['docs/user/quickstart.rst', 'src/requests/structures.py', 'src/requests/models.py', 'tests/test_requests.py', 'src/requests/structures.py', 'src/requests/models.py', 'src/requests/adapters.py', 'src/requests/structures.py', 'src/requests/models.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'src/requests/structures.py', 'docs/user/quickstart.rst', 'HISTORY.md', 'docs/api.rst', 'src/requests/utils.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'src/requests/structures.py', 'docs/user/advanced.rst']",1.703,explain,"Headers use CaseInsensitiveDict from src/requests/structures.py, which stores items in an OrderedDict keyed by key.lower() mapping to (original_key, value). Lookups and membership tests are case-insensitive, while iteration returns the case of the last key set.",['src/requests/structures.py'],0.0,1.0,0.5,1.0,docs,1.0,0.4,1.0,1.0,1.0,0.8982235105929052,0.5888888888692593,1.0,0.57,gpt-4o-mini,small_to_big,
+u01,How does requests implement HTTP/2 multiplexing?,The provided code snippets and documentation do not contain any information about how Requests implements HTTP/2 multiplexing.,477,"['docs/user/advanced.rst', 'docs/community/faq.rst', 'docs/index.rst', 'docs/user/advanced.rst', 'README.md', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/index.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/community/faq.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/community/faq.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst']",0.918,unanswerable,requests does not support HTTP/2; the codebase uses urllib3 over HTTP/1.1 and contains no multiplexing implementation.,[],,,,,,,,,,,,,,,,small_to_big,1.0
+u02,How do I use the built-in async/await API in requests?,"The provided code snippets and documentation do not show any built-in async/await API in the `requests` library itself.
+
+Instead, the docs (in `docs/community/recommended.rst` lines 39-45 and `docs/user/advanced.rst` lines 1072-1081) mention third-party projects that combine `requests` with async frameworks, such as:
+
+- `requests-threads` (https://github.com/requests/requests-threads) — provides a Requests session returning Twisted Deferreds, enabling async/await usage.
+- `grequests`
+- `requests-futures`
+- `httpx`
+
+So, **the `requests` library does not have a built-in async/await API**. To use async/await with requests-like functionality, you should use one of these external libraries like `requests-threads` or `httpx`.
+
+No function or file in the provided codebase shows a native async/await API for `requests`.",1570,"['docs/community/recommended.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'docs/_templates/sidebarlogo.html', 'docs/_templates/sidebarintro.html', 'docs/api.rst', 'docs/user/quickstart.rst', 'src/requests/api.py', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'README.md', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/api.rst', 'src/requests/__init__.py', 'docs/user/quickstart.rst', 'docs/community/recommended.rst', 'docs/index.rst', 'src/requests/models.py', 'docs/user/advanced.rst']",2.107,unanswerable,requests has no async/await API; the codebase is synchronous only.,[],,,,,,,,,,,,,,,,small_to_big,1.0
+u03,How does requests cache responses to disk?,"The provided code snippets and documentation do not contain any information about caching responses to disk in `requests`. 
+
+Specifically:
+- The `Response.iter_content` method in **src/requests/models.py** handles streaming response content in memory.
+- The docs in **docs/user/advanced.rst** and **docs/community/faq.rst** discuss request/response objects, streaming, and decoding, but do not mention disk caching.
+  
+**Conclusion:**  
+The codebase and docs shown do not implement or describe caching HTTP responses to disk. Requests does not provide built-in disk caching functionality. If caching is needed, it must be implemented externally or via third-party libraries.",1060,"['docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/community/faq.rst', 'src/requests/models.py', 'docs/index.rst', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'HISTORY.md', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'src/requests/sessions.py', 'docs/user/quickstart.rst', 'docs/user/advanced.rst', 'docs/user/advanced.rst', 'docs/user/quickstart.rst', 'src/requests/models.py', 'docs/user/advanced.rst', 'docs/user/advanced.rst']",1.496,unanswerable,"requests does not include response caching; that is provided by third-party packages like requests-cache, not this codebase.",[],,,,,,,,,,,,,,,,small_to_big,1.0
