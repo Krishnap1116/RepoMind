@@ -17,12 +17,12 @@ Ask natural-language questions about any codebase (local or GitHub) and get answ
 ¹ Baseline was scored with `gpt-4o-mini` generating answers. Against headers with the same generator it is −0.17 [−0.24, −0.11] on factual correctness and −0.19 [−0.29, −0.08] on context recall.
 
 What the evidence supports:
-1. **Contextual chunk headers are the main win.** Prefixing every chunk with its file, lines and enclosing function improved retrieval (Hit@1 +0.13 [+0.01, +0.24]) and the answers built on it (factual correctness +0.17 [+0.11, +0.24]). This held on the held-out questions (MRR +0.18 [+0.01, +0.35]).
+1. **Contextual chunk headers are the main retrieval win, and about half of the answer gain.** Prefixing every chunk with its file, lines and enclosing function improved retrieval (Hit@1 +0.13 [+0.01, +0.24]), and this held on the held-out questions (MRR +0.18 [+0.01, +0.35]). Answers improved by +0.17 [+0.11, +0.24] factual correctness over the baseline, but the baseline also gave the LLM 3 chunks instead of 5. With 5 chunks on both sides (`dense_k5` → `headers`, `gpt-4o-mini`), the header alone added +0.09 [+0.03, +0.14] factual correctness and +0.12 [+0.03, +0.22] context recall, with about the same amount of context (~630 vs ~650 tokens). The other +0.08 [+0.03, +0.14] came from the two extra chunks.
 2. **Small-to-big gets the needed facts to the LLM far more often.** Search runs over small fragments, then the LLM reads the whole function each fragment belongs to. Context recall rose by +0.21 on the development set and by +0.18 [+0.04, +0.33] on held-out questions. It roughly doubles the context sent to the LLM (~650 → ~1,500 tokens per question).
 3. **Better context did not clearly give better answers.** With `gpt-4.1-mini`, answers covered more of the reference facts (+0.06 [+0.01, +0.11]), but that gain did not replicate on the held-out set (+0.03 [−0.06, +0.13]). Factual correctness (F1) showed no difference, and with `gpt-4o-mini` neither did completeness.
 4. **The generator model mattered more than any retrieval change after headers.** Switching from `gpt-4o-mini` to `gpt-4.1-mini` raised completeness by +0.08 [+0.04, +0.13] with headers and +0.11 [+0.07, +0.16] with small_to_big.
 5. **Three techniques did not beat headers on these questions:** syntax-aware chunking as the *search* unit (Hit@1 −0.13 [−0.21, −0.04]), a general-purpose cross-encoder reranker (MRR −0.08 [−0.15, −0.01]), and hybrid BM25 search (no measurable difference). On the held-out locate and multi-file questions, hybrid trended better (MRR +0.10 [−0.04, +0.25]), a lead that is not yet confirmed.
-6. **The system says "not in the code"** on 7 of 7 unanswerable questions with `gpt-4.1-mini`, and on 6 of 7 with `gpt-4o-mini`.
+6. **The system says "not in the code"** on 7 of 7 unanswerable questions in the development set with `gpt-4.1-mini`, and on 6 of 7 with `gpt-4o-mini` (the held-out set has no unanswerable questions).
 
 Method, per-repo tables and limits: [Evaluation](#evaluation).
 
@@ -87,12 +87,12 @@ Top 5 contexts → LLM answer with file citations
 
 ## Retrieval pipelines
 
-Pick one with `--config`. The default is `small_to_big`. Every config differs from `headers` by one component, so together they form an ablation:
+Pick one with `--config`. The default is `small_to_big`. Every config differs from `headers` by one component, except `baseline`, which differs from `dense_k5` by one (3 chunks to the LLM instead of 5). Together they form an ablation:
 
 | Config | What it is |
 |--------|------------|
 | `baseline` | Dense search over 512-character chunks, top 3 chunks to the LLM (the original RepoMind) |
-| `dense_k5` | Baseline with top 5 chunks to the LLM |
+| `dense_k5` | `baseline` with top 5 chunks to the LLM, i.e. `headers` without the header. Same ranking as `baseline`, so its retrieval scores are identical; it differs only in answers |
 | `headers` | Contextual header (file, lines, enclosing class/function) prepended to each chunk before embedding |
 | `small_to_big` | `headers` search; the LLM reads the whole function/class (up to 1,500 tokens) each fragment belongs to |
 | `ast` | `headers` with syntax-aware chunks as the search unit |
@@ -143,20 +143,23 @@ Every reference answer and gold file was checked against the pinned source when 
 | Generator | Condition | Factual correctness | Completeness | Faithfulness | Answer relevancy | Context precision | Context recall |
 |---|---|---:|---:|---:|---:|---:|---:|
 | gpt-4o-mini | baseline | 0.34 | 0.32 | 0.89 | 0.74 | 0.75 | 0.41 |
+| gpt-4o-mini | dense_k5 | 0.42 | 0.38 | 0.88 | 0.77 | 0.74 | 0.47 |
 | gpt-4o-mini | headers | 0.51 | 0.48 | 0.93 | 0.82 | 0.79 | 0.60 |
 | gpt-4o-mini | small_to_big | 0.50 | 0.50 | 0.95 | 0.84 | 0.80 | 0.80 |
 | gpt-4.1-mini | headers | 0.55 | 0.56 | 0.90 | 0.84 | 0.78 | 0.57 |
 | gpt-4.1-mini | small_to_big | 0.57 | 0.62 | 0.93 | 0.84 | 0.79 | 0.78 |
 
 Paired differences (95% intervals):
-- **baseline → headers** (gpt-4o-mini): factual correctness +0.17 [+0.11, +0.24], completeness +0.15 [+0.10, +0.21], context recall +0.19 [+0.08, +0.29], faithfulness +0.05 [0.00, +0.09], answer relevancy +0.08 [+0.02, +0.15].
+- **baseline → headers** (gpt-4o-mini): factual correctness +0.17 [+0.11, +0.24], completeness +0.15 [+0.10, +0.21], context recall +0.19 [+0.08, +0.29], faithfulness +0.05 [0.00, +0.09], answer relevancy +0.08 [+0.02, +0.15]. This step changes two things, so it is split in the next two lines.
+  - **baseline → dense_k5** (5 chunks instead of 3, no header): factual correctness +0.08 [+0.03, +0.14], completeness +0.06 [+0.02, +0.10], context recall +0.06 [−0.03, +0.16], faithfulness −0.01 [−0.06, +0.03].
+  - **dense_k5 → headers** (header only, same 5 chunks): factual correctness +0.09 [+0.03, +0.14], completeness +0.10 [+0.05, +0.15], context recall +0.12 [+0.03, +0.22], faithfulness +0.06 [+0.01, +0.11], answer relevancy +0.04 [−0.01, +0.11].
 - **headers → small_to_big**:
   - context recall: +0.20 [+0.12, +0.29] (4o-mini), +0.21 [+0.12, +0.30] (4.1-mini)
   - completeness: +0.03 [−0.02, +0.08] (4o-mini), +0.06 [+0.01, +0.11] (4.1-mini)
   - factual correctness: −0.01 [−0.05, +0.04] (4o-mini), +0.02 [−0.03, +0.07] (4.1-mini)
 - **gpt-4o-mini → gpt-4.1-mini**, completeness: +0.08 [+0.04, +0.13] with headers, +0.11 [+0.07, +0.16] with small_to_big.
 
-The small-to-big completeness gain is significant with `gpt-4.1-mini` and not with `gpt-4o-mini`, but the two intervals overlap, so this does **not** show that small-to-big needs a stronger model.
+The small-to-big completeness gain is significant with `gpt-4.1-mini` and not with `gpt-4o-mini`, but the difference between the two gains is not: +0.03 [−0.03, +0.09] (paired difference-in-difference over the same 70 questions). So this does **not** show that small-to-big needs a stronger model.
 
 ### Held-out set (20 questions, gpt-4.1-mini)
 
@@ -200,22 +203,23 @@ Per-technique diagnosis:
 - The judge (`gpt-4o-mini`) is weaker than the strongest generator tested (`gpt-4.1-mini`), and an LLM judge is noisy on single answers. Claims rest on paired differences over 70 (or 20) questions.
 - Factual correctness compares against short reference answers, so true extra detail in an answer lowers its F1. Completeness (recall) is reported alongside for that reason.
 - The development set is skewed to explanation questions. The held-out set covers locate and multi-file questions but is small (n = 20).
-- Small-to-big sends about 2.3× more context tokens and adds ~0.1–0.4 s of latency per question.
+- Small-to-big sends about 2.3× more context tokens. Its effect on latency is within API noise: median time per question changed by −0.2 to +0.4 s across the six runs.
 
 ### Raw results
 Each evaluation run folder in `eval/results/` holds `per_question.csv`, `summary.json` and `ablation.md`; the completeness re-score folders (`factual_recall__…`) hold `per_question.csv` and `intervals.md`.
 - **Retrieval, all conditions:** [Flask](eval/results/golden_flask__20261022-175414/ablation.md) · [requests](eval/results/golden_requests__20261022-175653/ablation.md) · [Flask without changelog](eval/results/golden_flask__excl-CHANGES.rst__20261022-175802/ablation.md)
 - **Answers with gpt-4o-mini:** [Flask](eval/results/golden_flask__20261022-183522/ablation.md) · [requests](eval/results/golden_requests__20261022-185213/ablation.md) · completeness: `eval/results/factual_recall__20261022-190722`
 - **Answers with gpt-4.1-mini:** [Flask](eval/results/golden_flask__20261022-194532/ablation.md) · [requests](eval/results/golden_requests__20261022-195753/ablation.md) · completeness (development + held-out): `eval/results/factual_recall__gpt-4.1-mini__20261023-114520`
+- **Header vs. chunk count** (gpt-4o-mini; baseline, dense_k5, headers): [Flask](eval/results/golden_flask__20261023-134818/ablation.md) · [requests](eval/results/golden_requests__20261023-134522/ablation.md) · completeness: `eval/results/factual_recall__gpt-4o-mini__20261023-135115`
 - **Held-out:** retrieval [Flask](eval/results/heldout_flask__20261023-113511/ablation.md) · [requests](eval/results/heldout_requests__20261023-113604/ablation.md); answers [Flask](eval/results/heldout_flask__20261023-113946/ablation.md) · [requests](eval/results/heldout_requests__20261023-114328/ablation.md)
 
 ### Reproduce
 
 ```bash
-# Chunking statistics (chunk counts and sizes, functions split): fully local, no API calls
+# Chunking statistics (chunk counts and sizes, functions split): fully local, no API key needed
 python eval/chunk_stats.py --repo https://github.com/pallets/flask --ref 3.1.0 --prefix src/flask/
 
-# Retrieval only: fully local, no API calls
+# Retrieval only: fully local, no API key needed
 python eval/run_eval.py --retrieval-only
 python eval/run_eval.py --retrieval-only --golden eval/golden_requests.jsonl \
   --repo https://github.com/psf/requests --ref v2.32.3
@@ -223,6 +227,8 @@ python eval/run_eval.py --retrieval-only --golden eval/golden_requests.jsonl \
 # Answers + RAGAS (uses GEN_MODEL / JUDGE_MODEL from .env), then the completeness re-score
 python eval/run_eval.py --configs baseline,headers,small_to_big
 python eval/rescore_factual.py --mode recall --configs headers,small_to_big
+# Header vs. chunk count (run once per repo, as above)
+GEN_MODEL=gpt-4o-mini python eval/run_eval.py --configs baseline,dense_k5,headers
 
 # Pooled paired intervals across repos; ":label" tags runs, e.g. by generator
 python eval/pool_results.py eval/results/golden_flask__20261022-194532 eval/results/golden_requests__20261022-195753 \
@@ -231,6 +237,11 @@ python eval/pool_results.py eval/results/golden_flask__20261022-183522:4o-mini e
   eval/results/golden_flask__20261022-194532:4.1-mini eval/results/golden_requests__20261022-195753:4.1-mini \
   --reference headers@4o-mini --metrics factual_correctness
 python eval/pool_results.py eval/results/factual_recall__gpt-4.1-mini__20261023-114520 --only heldout_ --metrics factual_recall
+python eval/pool_results.py eval/results/golden_flask__20261023-134818 eval/results/golden_requests__20261023-134522 \
+  --reference baseline --metrics factual_correctness,context_recall,faithfulness
+# Is small-to-big's completeness gain larger with gpt-4.1-mini? (paired difference-in-difference)
+python eval/pool_results.py eval/results/factual_recall__20261022-190722:4o-mini eval/results/factual_recall__gpt-4.1-mini__20261023-114520:4.1-mini \
+  --only golden_ --metrics factual_recall --did small_to_big@4.1-mini,headers@4.1-mini,small_to_big@4o-mini,headers@4o-mini
 ```
 
 Answers and judge scores are cached in `eval/.cache/` per golden set, condition and generator, so an interrupted run resumes without paying twice. To build a golden set for another repo, run `eval/make_golden_draft.py`. It drafts questions from the repo's Python source into `eval/draft_<repo>.jsonl`; verify every row by hand before saving it as a `golden_*.jsonl` file.
