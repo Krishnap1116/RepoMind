@@ -186,7 +186,7 @@ The answer metrics were scored for `headers` and `small_to_big` only, the two ca
 **What fills the top rank.** On both repos the top chunk is docs, tests, a changelog or config for 45–58% of questions, in every condition. Re-scoring the same rankings with non-code chunks removed lifts Hit@1 to 0.73–0.88. That is not necessarily a failure: context recall counts a docs passage that contains the answer, and answers are what matter.
 
 Per-technique diagnosis:
-- **`ast`:** a docs chunk took #1 in 9 of its 10 losses. Code became fewer, larger vectors (Flask code chunks: 977 → 547), each covering more ideas.
+- **`ast`:** a docs chunk took #1 in 9 of its 10 losses. Code became fewer, larger vectors (`src/flask/*.py` chunks: 924 → 502, median 130 → 167 tokens including the header), each covering more ideas.
 - **Reranker:** on Flask it ordered *code* worse (code-only Hit@1 0.725 vs 0.875), ranking sibling modules such as `src/flask/sansio/app.py` above `src/flask/app.py`. On requests it ordered code slightly better but put docs first more often.
 - **Changelog hypothesis, tested and rejected:** `CHANGES.rst` ranked #1 on several Flask questions, but excluding it changed no condition's Flask Hit@1 by more than one question.
 
