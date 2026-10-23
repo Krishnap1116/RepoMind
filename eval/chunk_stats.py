@@ -1,9 +1,12 @@
 """Chunk statistics behind the README's Chunking section, for the character splitter and syntax-aware chunks.
 
 For the Python files under --prefix it reports the number of chunks, their median size in lines and in
-embedder tokens (including the contextual header, as indexed), how many functions/methods are split
-across more than one chunk, and how many chunks exceed the embedder's 512-token input. A function counts
-as split when no single chunk contains all of it (decorators included), using Python's own parser.
+embedder tokens (including the contextual header, as indexed) and how many functions/methods are split
+across more than one chunk. A function counts as split when no single chunk contains all of it
+(decorators included), using Python's own parser.
+
+For syntax-aware chunks it also checks the token budget: how many chunks exceed the embedder's 512-token
+input. That check is not run for the splitter, whose 512-character chunks (~130 tokens) cannot exceed it.
 
     python eval/chunk_stats.py --repo https://github.com/pallets/flask --ref 3.1.0 --prefix src/flask/
 
@@ -57,7 +60,9 @@ def stats(repo_path, prefix, chunking):
         "median lines": statistics.median(lines),
         "median tokens (with header)": statistics.median(tokens),
         "functions split": f"{split}/{functions} ({split / functions:.0%})",
-        "chunks over 512 tokens": sum(t + 2 > 512 for t in tokens),   # +2: [CLS] and [SEP]
+        # only a real check for ast: 512-character splitter chunks can't reach 512 tokens
+        "chunks over 512 tokens (ast budget check)":
+            sum(t + 2 > 512 for t in tokens) if chunking == "ast" else "n/a (512 chars ≈ 130 tokens)",
     }
 
 
