@@ -105,6 +105,8 @@ Pick one with `--config`. The default is `small_to_big`. Every config differs fr
 - **Character splitter** (default search unit, and always used for docs and config files): LangChain's `RecursiveCharacterTextSplitter` with 512 **characters** per chunk (median ≈ 9 lines of code). Language separators only bias where the cut lands, so functions are often split. On Flask, 54% of functions span more than one chunk.
 - **Syntax-aware chunks** (`ast`, and the whole-function contexts in `small_to_big`): code and front-end files are parsed with [tree-sitter](https://tree-sitter.github.io/). Each function, method, class or component becomes one chunk, together with the comments above it. A definition is split only if it exceeds the token budget (450 tokens for search chunks, measured with the embedder's tokenizer; 1,500 for small-to-big contexts), and then at its children (a class into methods) before any line-level cut. On Flask, only 7% of functions are split.
 
+All chunk counts, sizes and split rates above are for `src/flask/*.py` and come from `python eval/chunk_stats.py` (no API calls).
+
 **Why both?** Small fragments are better *search* units, while whole functions are better *reading* units. Using whole functions as the search unit (`ast`) retrieved worse, most likely because code became fewer, larger vectors that focused docs passages out-ranked (9 of its 10 losses had a docs chunk at #1). `small_to_big` uses each chunking for the job it measured best at.
 
 | Category | Extensions | Syntax-aware |
@@ -208,6 +210,9 @@ Each evaluation run folder in `eval/results/` holds `per_question.csv`, `summary
 ### Reproduce
 
 ```bash
+# Chunking statistics (chunk counts and sizes, functions split): fully local, no API calls
+python eval/chunk_stats.py --repo https://github.com/pallets/flask --ref 3.1.0 --prefix src/flask/
+
 # Retrieval only: fully local, no API calls
 python eval/run_eval.py --retrieval-only
 python eval/run_eval.py --retrieval-only --golden eval/golden_requests.jsonl \
