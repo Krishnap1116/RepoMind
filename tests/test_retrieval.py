@@ -1,5 +1,8 @@
+import os
+
 from langchain_core.documents import Document
 
+import repomind
 from repomind import CONFIGS, RAGPipeline, reciprocal_rank_fusion, tokenize
 
 
@@ -43,9 +46,7 @@ def test_chunk_mode_returns_ranking_unchanged():
     assert pipeline.contexts(ranked) == ranked
 
 
-def test_local_cache_is_per_folder_and_rebuilt_after_an_edit(tmp_path, monkeypatch):
-    import os
-    import repomind
+def test_local_cache_is_per_folder_and_rebuilt_only_when_indexed_files_change(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(repomind, "BASE_DIR", str(tmp_path / "caches"))
     a, b = tmp_path / "a" / "app", tmp_path / "b" / "app"
     for folder, name in ((a, "first"), (b, "other")):
@@ -53,10 +54,16 @@ def test_local_cache_is_per_folder_and_rebuilt_after_an_edit(tmp_path, monkeypat
         (folder / "m.py").write_text(f"def {name}(): return 1\n")
 
     def symbols(repo):
-        return [row[2] for rows in repomind.build_or_load_parents(str(repo)).values() for row in rows]
+        return sorted(row[2] for rows in repomind.build_or_load_parents(str(repo)).values() for row in rows)
 
     assert symbols(a) == ["first"]
     assert symbols(b) == ["other"]           # same folder name, different project
+    (a / "run.log").write_text("not indexed")
+    symbols(a)
+    assert "Rebuilding" not in capsys.readouterr().out
     (a / "m.py").write_text("def edited(): return 1\n")
     os.utime(a / "m.py", (1e10, 1e10))       # make the edit newer even on coarse-mtime filesystems
+    (a / "n.py").write_text("def added(): return 1\n")
+    assert symbols(a) == ["added", "edited"]
+    (a / "n.py").unlink()
     assert symbols(a) == ["edited"]

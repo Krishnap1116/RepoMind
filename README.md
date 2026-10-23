@@ -63,7 +63,7 @@ python repomind.py --repo ./my_project --query "How is the database connection m
 python repomind.py --repo ./my_project --query "..." --config headers --score
 ```
 
-The first query on a repo builds its index; later queries reuse it. Every answer lists the files and line ranges it was built from.
+The first query on a repo builds its index; later queries reuse it. A GitHub repo is cached per `--ref`. A local folder is rebuilt automatically when a file that gets indexed is added, removed or edited. Every answer lists the files and line ranges it was built from.
 
 ## How it works
 
@@ -119,7 +119,9 @@ All chunk counts, sizes and split rates above are for `src/flask/*.py` and come 
 | Docs | `.md`, `.rst`, `.txt` | splitter |
 | Config / data / scripts | `.yaml`, `.yml`, `.toml`, `.json`, `.ini`, `.cfg`, `.sql`, `.sh`, `.csv`, `.xml` | splitter |
 
-For front-end files, React components (`function App()`, `const Cart = () => …`, `export default …`) and classes are chunks of their own, like functions. CSS rule blocks and HTML elements have no names, so neighbouring ones are grouped up to the budget, and a large element is split at its child elements. Syntax-aware chunking has been **evaluated only on Python**; other languages use the same algorithm without measured results.
+Dependencies, build output and tool caches are skipped: `.git`, `node_modules`, `venv`, `.venv`, `site-packages`, `__pycache__`, `dist`, `.next`, `.nuxt`, `.svelte-kit`, `.tox`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`.
+
+For front-end files, React components (`function App()`, `const Cart = () => …`, `export default …`) and classes are chunks of their own, like functions. CSS rule blocks and HTML elements have no names, so neighbouring ones are grouped up to the budget, and a large element is split at its child elements. Minified or bundled files (any line over 1,000 characters) use the character splitter instead, since line-based chunks would copy that one line into every chunk. Syntax-aware chunking has been **evaluated only on Python**; other languages use the same algorithm without measured results.
 
 ---
 
@@ -239,7 +241,7 @@ Answers and judge scores are cached in `eval/.cache/` per golden set, condition 
 pytest tests
 ```
 
-The tests cover syntax-aware chunking (definitions kept whole, class split into methods, React components, line numbers), the fragment-to-whole-function mapping, Reciprocal Rank Fusion, code-aware tokenization and the evaluation metrics. They need no API key.
+The tests cover syntax-aware chunking (definitions kept whole, class split into methods, React components, line numbers), the line numbers and enclosing symbol in contextual headers, the minified-file fallback, the fragment-to-whole-function mapping, local cache rebuilds, Reciprocal Rank Fusion, code-aware tokenization and the evaluation metrics. They need no API key.
 
 ## Tech stack
 

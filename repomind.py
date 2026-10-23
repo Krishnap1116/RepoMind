@@ -442,25 +442,28 @@ def load_codebase(repo_path, chunk_headers=False, chunking="splitter"):
 
 def cache_dir(kind, repo, ref, suffix=""):
     """Cache folder for one version of a repo. A GitHub repo is named by its ref. A local folder is named by
-    its full path, and its cache is cleared when any file in it changed since the cache was built."""
+    its full path, and its cache is cleared when a file that gets indexed was added, removed or edited."""
     if is_github_url(repo):
         tag = re.sub(r"[^\w.-]", "_", ref) if ref else "head"
         return os.path.join(BASE_DIR, f"{kind}_{get_repo_name(repo)}_{tag}{suffix}")
     path = os.path.abspath(repo)
     folder = os.path.join(BASE_DIR, f"{kind}_{get_repo_name(repo)}_{hashlib.sha1(path.encode()).hexdigest()[:8]}{suffix}")
-    # a folder's mtime changes when a file in it is added, removed or renamed; a file's when it is edited
-    newest = 0.0
+    # only the files iter_repo_files reads count, so logs, .DS_Store or our own caches never force a rebuild
+    fingerprint = hashlib.sha1()
     for root, dirs, files in os.walk(path):
-        dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
-        newest = max([newest, os.path.getmtime(root)] + [os.path.getmtime(os.path.join(root, f)) for f in files])
-    stamp_path = os.path.join(folder, "source_mtime")
+        dirs[:] = sorted(d for d in dirs if d not in IGNORE_DIRS)
+        for file in sorted(files):
+            if os.path.splitext(file)[1] in SUPPORTED_EXTENSIONS:
+                filepath = os.path.join(root, file)
+                fingerprint.update(f"{filepath}:{os.path.getmtime(filepath)}\n".encode())
+    stamp_path = os.path.join(folder, "source_fingerprint")
     stamp = os.path.exists(stamp_path) and open(stamp_path).read()
-    if os.path.exists(folder) and stamp != str(newest):
+    if os.path.exists(folder) and stamp != fingerprint.hexdigest():
         print(f"{path} changed since it was indexed. Rebuilding.")
         shutil.rmtree(folder)
     os.makedirs(folder, exist_ok=True)
     with open(stamp_path, "w") as f:
-        f.write(str(newest))
+        f.write(fingerprint.hexdigest())
     return folder
 
 
